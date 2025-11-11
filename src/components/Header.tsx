@@ -12,14 +12,12 @@ import {
 export function Header() {
   return (
     <header className="bg-card shadow-sm">
-      <div className="container mx-auto flex flex-col items-center justify-center p-4 text-center">
-        <Link href="/">
+      <div className="container mx-auto flex items-center justify-between p-4">
+         <Link href="/">
           <Logo className="h-10 md:h-12 w-auto" />
         </Link>
-        <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline mt-2">
-          Supermoda Sorteios
-        </h1>
-        <nav className="mt-4 flex items-center gap-4 text-sm md:text-base text-muted-foreground">
+        
+        <nav className="flex items-center gap-4 text-sm md:text-base text-muted-foreground">
           <Link href="/" className="hover:text-primary hover:underline">
             Início
           </Link>

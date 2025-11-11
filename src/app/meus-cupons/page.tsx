@@ -20,7 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search } from 'lucide-react';
+import { Search, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { CouponLogo } from '@/components/CouponLogo';
 import { QRCodePlaceholder } from '@/components/QRCodePlaceholder';
@@ -150,7 +150,7 @@ function MeusCuponsPage() {
                                 <div className="absolute top-28 -left-3 w-6 h-6 bg-red-600 rounded-full"></div>
                                 <div className="absolute top-28 -right-3 w-6 h-6 bg-red-600 rounded-full"></div>
                                 
-                                <h2 className="text-2xl font-bold text-red-600">Supermoda Raffle Coupon</h2>
+                                <h2 className="text-2xl font-bold text-red-600 font-headline">Sorteio Supermoda</h2>
                                 <div className="border-t-2 border-dashed border-gray-300 w-full my-4 pt-4 flex justify-between items-center">
                                     <div>
                                         <p className="text-3xl md:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-amber-500" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.2)'}}>{coupons[0].couponNumber}</p>
@@ -168,16 +168,16 @@ function MeusCuponsPage() {
 
 
                                 <div className="pt-4 flex flex-col items-center justify-center gap-4">
-                                    <CouponLogo className="w-32 h-auto" />
+                                    <CouponLogo className="w-40 h-auto" />
                                     <div className="p-1 border-2 border-amber-400 rounded-lg inline-block">
                                        <QRCodePlaceholder className="w-28 h-28" />
                                     </div>
                                 </div>
 
                                 <div className="flex justify-between items-center pt-4">
-                                    <p className="text-xs font-semibold text-amber-600">♦︎♦︎ Good luck!</p>
+                                     <p className="text-xs font-semibold text-amber-600">♦︎♦︎ Boa Sorte!</p>
                                     <Button onClick={handleSaveCoupon} size="sm" className="bg-red-600 text-white rounded-full px-6 shadow-md border-2 border-amber-400 hover:bg-red-700">
-                                        Download
+                                        <Download className="mr-2"/> Salvar
                                     </Button>
                                 </div>
                             </div>
