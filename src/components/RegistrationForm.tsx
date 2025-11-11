@@ -407,19 +407,19 @@ export function RegistrationForm() {
         </div>
 
         <div className="space-y-3">
-          <Label>Qual a loja que tá na moda ser feliz?</Label>
+          <Label>Qual é a loja que te deixa na moda e ainda te dá a chance de ganhar prêmios?</Label>
           <RadioGroup name="quiz" required className="flex flex-col space-y-1">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="supermoda" id="r1" />
-              <Label htmlFor="r1" className="font-normal">Supermoda</Label>
+              <Label htmlFor="r1" className="font-normal">Claro que é a Supermoda!</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="other-a" id="r2" />
-              <Label htmlFor="r2" className="font-normal">Outra Loja A</Label>
+              <Label htmlFor="r2" className="font-normal">Talvez outra loja...</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="other-b" id="r3" />
-              <Label htmlFor="r3" className="font-normal">Outra Loja B</Label>
+              <Label htmlFor="r3" className="font-normal">Ainda estou descobrindo 😄</Label>
             </div>
           </RadioGroup>
         </div>
