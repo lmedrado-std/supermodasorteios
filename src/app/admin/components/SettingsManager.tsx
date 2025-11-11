@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useFirestore, useDoc } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,10 @@ const SETTINGS_DOC_PATH = 'settings/raffle';
 
 export function SettingsManager() {
   const firestore = useFirestore();
-  const settingsDocRef = doc(firestore, SETTINGS_DOC_PATH);
+  const settingsDocRef = useMemoFirebase(
+    () => firestore ? doc(firestore, SETTINGS_DOC_PATH) : null,
+    [firestore]
+  );
 
   const { data: settings, isLoading: isLoadingSettings } = useDoc<{ valuePerCoupon: number }>(settingsDocRef);
   
@@ -35,6 +38,8 @@ export function SettingsManager() {
   }, [settings]);
 
   const handleSave = async () => {
+    if (!settingsDocRef) return;
+
     if (valuePerCoupon <= 0) {
       toast({
         variant: 'destructive',
