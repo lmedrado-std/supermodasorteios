@@ -1,7 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth, useUser } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword 
+} from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,24 +49,42 @@ export default function LoginPage() {
     }
     
     setIsLoggingIn(true);
+    const email = 'admin@supermoda.com';
 
     try {
-      const email = 'admin@supermoda.com';
+      // Tenta fazer o login primeiro
       await signInWithEmailAndPassword(auth, email, password);
-      // O useEffect cuidará do redirecionamento para /admin após a mudança de estado do usuário.
+      // O useEffect cuidará do redirecionamento após a mudança de estado do usuário.
+
     } catch (error: any) {
-      let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        description = 'Senha incorreta.';
-      } else if (error.code === 'auth/too-many-requests') {
-        description = 'Muitas tentativas. Tente novamente mais tarde.';
+      // Se o usuário não existe, cria um novo com a senha "supermoda"
+      if (error.code === 'auth/user-not-found' && password === 'supermoda') {
+        try {
+          await createUserWithEmailAndPassword(auth, email, 'supermoda');
+          // O login é automático após a criação, e o useEffect fará o redirecionamento.
+        } catch (creationError: any) {
+           toast({
+            variant: 'destructive',
+            title: 'Erro ao Criar Admin',
+            description: `Não foi possível criar o usuário administrador: ${creationError.message}`,
+          });
+           setIsLoggingIn(false);
+        }
+      } else {
+         // Lida com outros erros de login (senha errada, etc.)
+        let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          description = 'Senha incorreta.';
+        } else if (error.code === 'auth/too-many-requests') {
+          description = 'Muitas tentativas de login falharam. Tente novamente mais tarde.';
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Erro de Acesso',
+          description: description,
+        });
+        setIsLoggingIn(false); // Só reseta o loading em caso de erro
       }
-      toast({
-        variant: 'destructive',
-        title: 'Erro de Acesso',
-        description: description,
-      });
-      setIsLoggingIn(false); // Só reseta o loading em caso de erro
     }
   };
 
