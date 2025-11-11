@@ -32,7 +32,7 @@ export function Header() {
               <TooltipTrigger asChild>
                 <Link
                   href="/admin/login"
-                  className="hover:text-primary"
+                  className="hover:text-primary hidden md:flex"
                   aria-label="Painel Administrativo"
                 >
                   <Settings className="h-5 w-5" />
