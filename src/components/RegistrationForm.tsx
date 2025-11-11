@@ -22,7 +22,9 @@ import { useFirestore } from '@/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import html2canvas from 'html2canvas';
-import { Logo } from './Logo';
+import { CouponLogo } from './CouponLogo';
+import { QRCodePlaceholder } from './QRCodePlaceholder';
+
 
 const initialState: {
   message: string | null;
@@ -123,16 +125,18 @@ export function RegistrationForm() {
 
   const handleSaveCoupon = () => {
     if (couponContainerRef.current) {
-      html2canvas(couponContainerRef.current, {
-        backgroundColor: null,
-        scale: 2,
-      }).then((canvas) => {
-        const link = document.createElement('a');
-        const firstCoupon = state.coupons ? state.coupons[0] : 'cupom';
-        link.download = `cupons-supermoda-${firstCoupon}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      });
+        const couponNode = couponContainerRef.current;
+        html2canvas(couponNode, {
+            backgroundColor: '#dc2626', // Match the background
+            scale: 2,
+            useCORS: true,
+        }).then((canvas) => {
+            const link = document.createElement('a');
+            const firstCoupon = state.coupons ? state.coupons[0] : 'cupom';
+            link.download = `cupom-supermoda-${firstCoupon}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
     }
   };
 
@@ -254,35 +258,52 @@ export function RegistrationForm() {
             className="mb-6 bg-green-100 border-green-400 text-green-700 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300"
           >
             <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <AlertTitle>Sucesso! Seus cupons foram gerados!</AlertTitle>
+            <AlertTitle>Sucesso! Seu(s) cupom(ns) foi(foram) gerado(s)!</AlertTitle>
             <AlertDescription>
-              Salve a imagem abaixo para não perdê-los.
+              Salve a imagem abaixo para não perdê-la.
             </AlertDescription>
           </Alert>
+            
+          <div className="flex flex-col items-center gap-6">
+            <div ref={couponContainerRef} className="bg-red-600 rounded-2xl p-2 shadow-2xl w-full max-w-sm">
+                <div className="relative bg-white rounded-xl p-6 text-center space-y-4">
+                    {/* Perforated edges effect */}
+                    <div className="absolute top-28 -left-3 w-6 h-6 bg-red-600 rounded-full"></div>
+                    <div className="absolute top-28 -right-3 w-6 h-6 bg-red-600 rounded-full"></div>
+                    
+                    <h2 className="text-2xl font-bold text-red-600">Supermoda Raffle Coupon</h2>
+                    <div className="border-t-2 border-dashed border-gray-300 w-full my-4 pt-4 flex justify-between items-center">
+                        <div>
+                            <p className="text-3xl md:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-amber-500" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.2)'}}>{state.coupons?.[0]}</p>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-sm font-bold text-red-600 uppercase">{state.fullName}</p>
+                        </div>
+                    </div>
 
-          <div ref={couponContainerRef} className="bg-gradient-to-br from-background to-secondary/50 p-6 rounded-lg border-2 border-dashed border-primary/50 shadow-lg inline-block w-full max-w-md">
-              <div className="text-center space-y-4">
-                  <Logo className="h-10 w-auto mx-auto"/>
-                  <p className="text-muted-foreground">Parabéns! Guarde seus números da sorte.</p>
-                  <p className="text-2xl font-bold text-primary">{state.fullName}</p>
-                  <div className="bg-primary/10 border border-primary/20 rounded-md px-4 py-3 space-y-2">
-                      <p className="text-sm font-semibold text-primary">Seus Números da Sorte:</p>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                        {state.coupons?.map(coupon => (
-                          <p key={coupon} className="text-2xl font-bold tracking-wider text-foreground">{coupon}</p>
-                        ))}
+                    {state.coupons && state.coupons.length > 1 && (
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-lg font-bold text-gray-700">
+                        {state.coupons.slice(1).map(coupon => <p key={coupon}>{coupon}</p>)}
                       </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground pt-2">Boa Sorte no sorteio! 🍀</p>
-              </div>
-          </div>
+                    )}
 
-          <div className="mt-6 flex flex-col items-center gap-4">
-            <Button onClick={handleSaveCoupon} className="w-full max-w-xs mx-auto">
-                Salvar Imagem
-                <Download className="ml-2 h-4 w-4" />
-            </Button>
-            <Button variant="outline" onClick={() => { setShowSuccess(false); setState(initialState); }} className="w-full max-w-xs mx-auto">
+                    <div className="pt-4 flex flex-col items-center justify-center gap-4">
+                        <CouponLogo className="w-32 h-auto" />
+                        <div className="p-1 border-2 border-amber-400 rounded-lg inline-block">
+                           <QRCodePlaceholder className="w-28 h-28" />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4">
+                        <p className="text-xs font-semibold text-amber-600">♦︎♦︎ Good luck!</p>
+                        <Button onClick={handleSaveCoupon} size="sm" className="bg-red-600 text-white rounded-full px-6 shadow-md border-2 border-amber-400 hover:bg-red-700">
+                            Download
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+             <Button variant="outline" onClick={() => { setShowSuccess(false); setState(initialState); }} className="w-full max-w-sm mx-auto">
                 Registrar Novo Cupom
             </Button>
           </div>
