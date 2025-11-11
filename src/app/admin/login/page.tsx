@@ -5,7 +5,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,9 +68,17 @@ export default function LoginPage() {
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const newUser = userCredential.user;
-          // Corrigido: Usar o UID do novo usuário para criar o documento de permissão.
+          
+          // Criar o documento de permissão
           const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
           await setDoc(adminRoleRef, { role: 'admin' });
+
+          // Inicializar a coleção 'counters' se não existir
+          const counterRef = doc(firestore, 'counters', 'coupons');
+          const counterSnap = await getDoc(counterRef);
+          if (!counterSnap.exists()) {
+            await setDoc(counterRef, { lastNumber: 0 });
+          }
           
           toast({
             title: 'Administrador Criado!',
