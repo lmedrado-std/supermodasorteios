@@ -16,35 +16,42 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
+    // Se ainda estiver verificando o usuário, não faz nada.
     if (isUserLoading) {
       return;
     }
 
+    // Se NÃO há usuário...
     if (!user) {
-      if (pathname !== '/admin/login') {
+      // e não estamos na página de login, redireciona para lá.
+      if (!isLoginPage) {
         router.push('/admin/login');
       }
-      if (isAdmin !== false) setIsAdmin(false); 
       return;
     }
 
-    if (isAdmin === null && firestore) {
+    // Se HÁ usuário e estamos na página de login, redireciona para o painel.
+    if (user && isLoginPage) {
+        router.push('/admin');
+        return;
+    }
+
+    // Se HÁ usuário, não estamos na página de login e ainda não verificamos se é admin...
+    if (user && !isLoginPage && isAdmin === null && firestore) {
       const checkAdmin = async () => {
         try {
           const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
           const adminDoc = await getDoc(adminRoleRef);
           
           if (adminDoc.exists()) {
-            setIsAdmin(true);
-            if (pathname === '/admin/login') {
-                router.push('/admin');
-            }
+            setIsAdmin(true); // É admin, permite o acesso.
           } else {
-            setIsAdmin(false);
-            if (auth) await signOut(auth);
-            router.push('/admin/login');
+            setIsAdmin(false); // Não é admin.
+            if (auth) await signOut(auth); // Desloga...
+            router.push('/admin/login'); // ...e redireciona para o login.
           }
         } catch (error) {
           console.error("Error checking admin status:", error);
@@ -57,30 +64,33 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       checkAdmin();
     }
     
-  }, [user, isUserLoading, firestore, auth, router, pathname, isAdmin]);
+  }, [user, isUserLoading, firestore, auth, router, pathname, isAdmin, isLoginPage]);
 
   const handleLogout = async () => {
     if (auth) {
+      setIsAdmin(null); // Reseta o estado de admin
       await signOut(auth);
-      setIsAdmin(null);
       router.push('/admin/login');
     }
   };
 
-  if (isUserLoading || (user && isAdmin === null && pathname !== '/admin/login')) {
+  // Tela de carregamento principal enquanto verifica o usuário
+  if (isUserLoading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-4">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p>{user ? 'Verificando permissões...' : 'Verificando autenticação...'}</p>
+        <p>Verificando autenticação...</p>
       </div>
     );
   }
 
-  if (!user && pathname === '/admin/login') {
+  // Se for a página de login e não houver usuário, exibe a página.
+  if (isLoginPage && !user) {
     return <>{children}</>;
   }
-  
-  if (user && isAdmin) {
+
+  // Se for uma página protegida e o usuário for admin, exibe o layout.
+  if (!isLoginPage && user && isAdmin) {
     return (
         <div className="min-h-screen bg-muted/40">
           <header className="bg-background shadow-sm sticky top-0 z-50">
@@ -94,13 +104,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 </h1>
               </div>
               <nav className="flex items-center gap-0 md:gap-2 text-sm text-muted-foreground">
-                  <Link href="/" className="hover:text-primary hover:underline px-2">
+                  <Link href="/" className="hover:text-primary hover:underline px-1 sm:px-2">
                     Início
                   </Link>
-                  <Link href="/meus-cupons" className="hover:text-primary hover:underline px-2">
+                  <Link href="/meus-cupons" className="hover:text-primary hover:underline px-1 sm:px-2">
                     Cupons
                   </Link>
-                   <Link href="/regulamento" className="hover:text-primary hover:underline px-2">
+                   <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2">
                     Regulamento
                   </Link>
               </nav>
@@ -117,10 +127,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
+   // Se nenhuma das condições acima for atendida, mostra um loader genérico.
    return (
        <div className="flex flex-col justify-center items-center h-screen gap-4">
          <Loader2 className="h-8 w-8 animate-spin" />
-         <p>Redirecionando...</p>
+         <p>Carregando...</p>
       </div>
     );
 }
