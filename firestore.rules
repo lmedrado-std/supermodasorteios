@@ -15,6 +15,7 @@ service cloud.firestore {
 
     /**
      * @description Grants public read access to coupons and restricts write access to admins.
+     * The create rule allows public write but validates the timestamp.
      * @path /coupons/{couponId}
      */
     match /coupons/{couponId} {
@@ -25,6 +26,7 @@ service cloud.firestore {
     
     /**
      * @description Enables public write access for coupon generation counter.
+     * This is required for the transaction that generates new coupon numbers.
      * @path /counters/{counterId}
      */
     match /counters/{counterId} {
@@ -37,8 +39,10 @@ service cloud.firestore {
      */
     match /roles_admin/{adminUserId} {
       allow get, list: if isAdmin();
+      // Allow any user to create their own role document initially.
+      // This is a common pattern for self-assigning roles, but should be managed carefully.
       allow create: if request.auth.uid == adminUserId;
-      allow update, delete: if false;
+      allow update, delete: if false; // Roles should not be updatable or deletable by clients.
     }
     
     /**
