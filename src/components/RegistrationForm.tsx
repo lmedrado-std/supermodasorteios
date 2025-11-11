@@ -238,68 +238,94 @@ export function RegistrationForm() {
     const counterRef = doc(firestore, 'counters', 'coupons');
     const registrationDate = new Date();
 
-    runTransaction(firestore, async (transaction) => {
-        const counterDoc = await transaction.get(counterRef);
-        let currentNumber = 0;
-        if (counterDoc.exists()) {
-            currentNumber = counterDoc.data().lastNumber || 0;
-        } else {
-            transaction.set(counterRef, { lastNumber: 0 });
-        }
-        
-        const newCoupons: string[] = [];
+    try {
+        const generatedCoupons = await runTransaction(firestore, async (transaction) => {
+            const counterDoc = await transaction.get(counterRef);
+            let currentNumber = 0;
+            if (counterDoc.exists()) {
+                currentNumber = counterDoc.data().lastNumber || 0;
+            } else {
+                // Initialize counter if it doesn't exist
+                transaction.set(counterRef, { lastNumber: 0 });
+            }
+            
+            const newCoupons: string[] = [];
+            const couponDataList = [];
+            
+            for (let i = 0; i < couponsToGenerate; i++) {
+                const nextNumber = currentNumber + i + 1;
+                const couponNumber = `SM-${String(nextNumber).padStart(5, '0')}`;
+                newCoupons.push(couponNumber);
+
+                const couponData = {
+                    fullName: nome,
+                    cpf,
+                    purchaseNumber: numeroCompra,
+                    purchaseValue: valorCompra,
+                    purchaseDate: Timestamp.fromDate(dataCompra),
+                    couponNumber: couponNumber,
+                    registrationDate: Timestamp.fromDate(registrationDate),
+                };
+                couponDataList.push(couponData);
+            }
+            
+            // Note: We don't commit the batch inside the transaction.
+            // We stage the writes and commit outside, or stage transaction writes.
+            const finalCounterNumber = currentNumber + couponsToGenerate;
+            transaction.set(counterRef, { lastNumber: finalCounterNumber }, { merge: true });
+
+            // We return the data to be written outside the transaction's read phase.
+            return { newCoupons, couponDataList };
+        });
+
+        // Now, perform the batch write outside the transaction.
         const batch = writeBatch(firestore);
-
-        for (let i = 0; i < couponsToGenerate; i++) {
-            const nextNumber = currentNumber + i + 1;
-            const couponNumber = `SM-${String(nextNumber).padStart(5, '0')}`;
-            newCoupons.push(couponNumber);
-
+        generatedCoupons.couponDataList.forEach(couponData => {
             const couponRef = doc(collection(firestore, 'coupons'));
-            const couponData = {
-                id: couponRef.id,
+            // Add id to couponData
+            const finalCouponData = { ...couponData, id: couponRef.id };
+            batch.set(couponRef, finalCouponData);
+        });
+
+        await batch.commit();
+
+        setState({
+            message: null,
+            coupons: generatedCoupons.newCoupons,
+            fullName: nome,
+            purchaseValue: valorCompra,
+            purchaseNumber: numeroCompra,
+            registrationDate: registrationDate,
+            purchaseDate: dataCompra,
+        });
+
+    } catch (error: any) {
+        if (error.name === 'FirebaseError' && (error.code === 'permission-denied' || error.code === 'unauthenticated')) {
+            const couponDataExample = {
                 fullName: nome,
                 cpf,
                 purchaseNumber: numeroCompra,
                 purchaseValue: valorCompra,
                 purchaseDate: Timestamp.fromDate(dataCompra),
-                couponNumber: couponNumber,
+                couponNumber: "SM-XXXXX",
                 registrationDate: Timestamp.fromDate(registrationDate),
             };
-            batch.set(couponRef, couponData);
+
+            const permissionError = new FirestorePermissionError({
+                path: 'coupons/{couponId}',
+                operation: 'create',
+                requestResourceData: couponDataExample,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            // We set a generic message because the detailed error will be shown in the overlay
+            setState({ message: 'Erro de permissão. Verifique os detalhes e tente novamente.' });
+        } else {
+            // Handle other errors (network, transaction failure, etc.)
+            setState({
+                message: error.message || 'Erro no servidor. Não foi possível gerar o cupom.',
+            });
         }
-
-        const finalCounterNumber = currentNumber + couponsToGenerate;
-        transaction.set(counterRef, { lastNumber: finalCounterNumber }, { merge: true });
-
-        await batch.commit();
-        return newCoupons;
-    }).then((generatedCoupons) => {
-      setState({
-        message: null,
-        coupons: generatedCoupons,
-        fullName: nome,
-        purchaseValue: valorCompra,
-        purchaseNumber: numeroCompra,
-        registrationDate: registrationDate,
-        purchaseDate: dataCompra,
-      });
-    }).catch((error: any) => {
-      console.error("Transaction failed: ", error);
-      if (error.name === 'FirebaseError' && (error.code === 'permission-denied' || error.code === 'unauthenticated')) {
-        const permissionError = new FirestorePermissionError({
-          path: 'coupons/{couponId} OR counters/coupons',
-          operation: 'write',
-          requestResourceData: { fullName: nome, cpf, numeroCompra, purchaseValue: valorCompra },
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        setState({ message: 'Erro de permissão. Contate o administrador.' });
-      } else {
-         setState({
-            message: error.message || 'Erro no servidor. Não foi possível gerar o cupom. Tente novamente mais tarde.',
-         });
-      }
-    });
+    }
   };
 
   if (showSuccess) {
