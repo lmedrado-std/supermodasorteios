@@ -56,24 +56,19 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // O sucesso do login acionará o useEffect no layout para redirecionar e verificar o admin.
+      // O sucesso do login acionará o useEffect no layout para redirecionar.
     } catch (error: any) {
-      const isUserNotFound = error.code === 'auth/user-not-found';
-      const isMasterPassword = password === 'supermoda';
-      const isWrongPassword = error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential';
-      
-      // Cenário 1: Usuário não existe e a senha é a mestra.
-      // Ação: Criar o usuário e seu documento de permissão.
-      if (isUserNotFound && isMasterPassword) {
+      // Cenário de criação: Usuário não existe e a senha é a mestra.
+      if (error.code === 'auth/user-not-found' && password === 'supermoda') {
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const newUser = userCredential.user;
           
-          // Criar o documento de permissão
+          // Criar o documento de permissão para o novo admin.
           const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
           await setDoc(adminRoleRef, { role: 'admin' });
 
-          // Inicializar a coleção 'counters' se não existir
+          // Inicializar a coleção 'counters' se não existir.
           const counterRef = doc(firestore, 'counters', 'coupons');
           const counterSnap = await getDoc(counterRef);
           if (!counterSnap.exists()) {
@@ -82,9 +77,9 @@ export default function LoginPage() {
           
           toast({
             title: 'Administrador Criado!',
-            description: 'Login efetuado com sucesso. Lembre-se de alterar sua senha.',
+            description: 'Login efetuado. Lembre-se de alterar sua senha no painel.',
           });
-           // O login é automático após a criação, o useEffect no layout fará o redirecionamento.
+          // O login é automático após a criação, o layout fará o redirecionamento.
         } catch (creationError: any) {
           toast({
             variant: 'destructive',
@@ -93,12 +88,12 @@ export default function LoginPage() {
           });
         }
       } else {
-         // Cenário 2: Senha incorreta ou qualquer outro erro.
-        let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
-        if (isWrongPassword) {
-          description = 'Senha incorreta. Siga as instruções em "Problemas para acessar?" se necessário.';
+        // Cenário de erro genérico (senha incorreta, etc).
+        let description = 'Ocorreu um erro. Verifique suas credenciais.';
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          description = 'Senha incorreta. Siga as instruções em "Problemas para acessar?" se o erro persistir.';
         } else if (error.code === 'auth/too-many-requests') {
-          description = 'Muitas tentativas de login falharam. Tente novamente mais tarde.';
+          description = 'Muitas tentativas de login falharam. Por segurança, sua conta foi temporariamente bloqueada. Tente novamente mais tarde.';
         }
         
         toast({
@@ -177,12 +172,12 @@ export default function LoginPage() {
               </form>
                <div className="mt-6 text-center text-sm text-muted-foreground p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="font-bold text-yellow-800">Problemas para acessar?</p> 
-                  <p className="mt-2">Se a senha 'supermoda' não funcionar, significa que o usuário administrador já existe com outra senha. Para resetar, você deve:</p>
+                  <p className="mt-2">Se você está recebendo o erro "Senha incorreta", significa que o usuário administrador já existe. Para resetar o acesso, você deve:</p>
                   <ol className="text-left list-decimal list-inside mt-2 space-y-1">
-                      <li>Ir ao <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline text-primary">Console do Firebase</a>.</li>
-                      <li>Navegar para <strong>Authentication</strong>.</li>
-                      <li>Deletar o usuário <strong>pix@nasupermoda.com</strong>.</li>
-                      <li>Voltar aqui e tentar logar com a senha 'supermoda' novamente.</li>
+                      <li>Ir ao <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline text-primary font-semibold">Console do Firebase</a> do seu projeto.</li>
+                      <li>Navegar até a seção <strong>Authentication</strong>.</li>
+                      <li>Encontrar e <strong>deletar</strong> o usuário com o email <strong>pix@nasupermoda.com</strong>.</li>
+                      <li>Voltar para esta tela e tentar logar novamente com a senha 'supermoda'.</li>
                   </ol>
               </div>
             </CardContent>
