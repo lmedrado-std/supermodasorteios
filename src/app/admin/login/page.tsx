@@ -56,7 +56,7 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Se o login for bem-sucedido, o useEffect cuidará do redirecionamento.
+      // O sucesso do login acionará o useEffect para redirecionar
     } catch (error: any) {
       const isUserNotFound = error.code === 'auth/user-not-found';
       const isMasterPassword = password === 'supermoda';
@@ -69,7 +69,7 @@ export default function LoginPage() {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const newUser = userCredential.user;
           const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
-          await setDoc(adminRolef, { role: 'admin' });
+          await setDoc(adminRoleRef, { role: 'admin' });
           toast({
             title: 'Administrador Criado!',
             description: 'Login efetuado com sucesso. Lembre-se de alterar sua senha.',
@@ -88,7 +88,6 @@ export default function LoginPage() {
       }
       
       // Cenário 2: Qualquer outro erro (senha incorreta, muitas tentativas, etc.)
-      // Ação: Mostrar uma mensagem de erro genérica e clara.
       let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
       if (isWrongPassword) {
         description = 'Senha incorreta. Siga as instruções em "Problemas para acessar?" se necessário.';
