@@ -43,7 +43,7 @@ export default function RegulamentoPage() {
                         2. Período da Campanha
                     </h2>
                     <p className="mt-2">
-                    VERIFIQUE A VIGENCIA DA CMAPANHA ATUAL EM NOSSA LOJA FISICA OU INTAGRAM. Os cupons podem ser gerados até as 23h59 da data limite estipulada no sorteio em vigência. O sorteio será realizado com data definida na loja física e/ou redes sociais oficiais, conforme data divulgada nas redes oficiais da Supermoda.
+                    Verifique a vigência da campanha atual em nossa loja física ou Instagram. Os cupons podem ser gerados até as 23h59 da data limite estipulada no sorteio em vigência. O sorteio será realizado com data definida na loja física e/ou redes sociais oficiais.
                     </p>
                 </div>
 
@@ -63,7 +63,7 @@ export default function RegulamentoPage() {
                         4. Como Participar
                     </h2>
                     <p className="mt-2">
-                    A cada valor em compras definido na campanha atual realizadas na loja, o cliente receberá 1 (um) cupom eletrônico da sorte. Os cupons são gerados automaticamente após o cadastro correto da compra no site da promoção. O sistema informará quantos cupons foram gerados e exibirá os números correspondentes (ex: SM-00067 a SM-00568). Cada cupom representa 1 chance de ganhar no sorteio.
+                    A cada valor em compras definido na campanha atual, o cliente receberá 1 (um) cupom eletrônico da sorte. Os cupons são gerados automaticamente após o cadastro correto da compra no site da promoção. O sistema informará quantos cupons foram gerados e exibirá os números correspondentes. Cada cupom representa 1 chance de ganhar no sorteio.
                     </p>
                 </div>
                 
@@ -83,7 +83,7 @@ export default function RegulamentoPage() {
                         6. Sorteio e Divulgação
                     </h2>
                     <p className="mt-2">
-                    O sorteio será realizado de forma eletrônica e transparente, com acompanhamento da equipe Supermoda. O resultado será divulgado nas redes sociais oficiais e no site da promoção até 48h após o sorteio. O ganhador deverá retirar o prêmio na loja, apresentando documento com foto e comprovante da compra.
+                    O sorteio será realizado de forma eletrônica e transparente, com acompanhamento da equipe Supermoda. O resultado será divulgado nas redes sociais oficiais e no site da promoção em até 48h após o sorteio. O ganhador deverá retirar o prêmio na loja, apresentando documento com foto e comprovante da compra.
                     </p>
                 </div>
                 
@@ -96,7 +96,7 @@ export default function RegulamentoPage() {
                         <li>Somente serão aceitos números de compras emitidas durante o período da campanha.</li>
                         <li>É vedada a participação de colaboradores e familiares diretos da Supermoda.</li>
                         <li>Em caso de informações incorretas, duplicadas ou inconsistentes, o cupom poderá ser invalidado.</li>
-                        <li>A Supermoda reserva-se o direito de alterar ou cancelar a campanha, em caso de força maior ou necessidade administrativa, garantindo transparência a todos os participantes.</li>
+                        <li>A Supermoda reserva-se o direito de alterar ou cancelar a campanha em caso de força maior, garantindo transparência a todos os participantes.</li>
                     </ul>
                 </div>
                 
@@ -109,7 +109,7 @@ export default function RegulamentoPage() {
                         Em caso de dúvidas, entre em contato pelo WhatsApp da loja ou pelas redes sociais oficiais da Supermoda.
                     </p>
                     <p className="flex items-center gap-2 mt-2">
-                       <Instagram className="h-4 w-4" /> Instagram: [seu-instagram-aqui]
+                       <Instagram className="h-4 w-4" /> Instagram: [insira o @ do seu instagram aqui]
                     </p>
                 </div>
 
