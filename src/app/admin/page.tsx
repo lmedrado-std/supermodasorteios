@@ -1,7 +1,7 @@
 'use client';
 import { AdminTable } from './components/AdminTable';
 import { SettingsManager } from './components/SettingsManager';
-import { RaffleManager } from './components/RaffleManager';
+import { RaffleDraw } from './components/RaffleDraw';
 import { WinnerHistory } from './components/WinnerHistory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Ticket, Settings, PartyPopper, History } from 'lucide-react';
@@ -34,7 +34,7 @@ export default function AdminPage() {
       
       <TabsContent value="raffle">
         <div className="max-w-2xl mx-auto">
-            <RaffleManager />
+            <RaffleDraw />
         </div>
       </TabsContent>
 
