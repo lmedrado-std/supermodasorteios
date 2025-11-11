@@ -57,7 +57,6 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // O sucesso do login acionará o useEffect no layout para redirecionar e verificar o admin.
-      // O redirecionamento acontecerá no layout.
     } catch (error: any) {
       const isUserNotFound = error.code === 'auth/user-not-found';
       const isMasterPassword = password === 'supermoda';
@@ -69,8 +68,10 @@ export default function LoginPage() {
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const newUser = userCredential.user;
+          // Corrigido: Usar o UID do novo usuário para criar o documento de permissão.
           const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
           await setDoc(adminRoleRef, { role: 'admin' });
+          
           toast({
             title: 'Administrador Criado!',
             description: 'Login efetuado com sucesso. Lembre-se de alterar sua senha.',
