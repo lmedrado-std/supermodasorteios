@@ -102,7 +102,6 @@ function MeusCuponsPage() {
                     value={cpf}
                     onChange={(e) => setCpf(e.target.value)}
                     maxLength={11}
-                    pattern="\d{11}"
                   />
                 </div>
                 <Button

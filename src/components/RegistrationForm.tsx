@@ -313,7 +313,6 @@ export function RegistrationForm() {
             placeholder="Apenas números"
             required
             maxLength={11}
-            pattern="\\d{11}"
           />
         </div>
         <div>
