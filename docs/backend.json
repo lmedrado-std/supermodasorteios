@@ -26,6 +26,11 @@
           "type": "number",
           "description": "The value of the purchase."
         },
+        "purchaseDate": {
+            "type": "string",
+            "description": "Timestamp of when the purchase was made.",
+            "format": "date-time"
+        },
         "couponNumber": {
           "type": "string",
           "description": "Unique coupon number (e.g., SM-00001)."
@@ -42,6 +47,7 @@
         "cpf",
         "purchaseNumber",
         "purchaseValue",
+        "purchaseDate",
         "couponNumber",
         "registrationDate"
       ]
@@ -75,6 +81,27 @@
         "valuePerCoupon": {
           "type": "number",
           "description": "The purchase value required to generate one coupon."
+        },
+        "campaignStartDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The start date of the campaign."
+        },
+        "campaignEndDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The end date of the campaign."
+        },
+        "winner": {
+            "type": "object",
+            "description": "Information about the raffle winner.",
+            "properties": {
+                "couponId": { "type": "string" },
+                "couponNumber": { "type": "string" },
+                "fullName": { "type": "string" },
+                "cpf": { "type": "string" },
+                "drawDate": { "type": "string", "format": "date-time" }
+            }
         }
       },
       "required": ["valuePerCoupon"]

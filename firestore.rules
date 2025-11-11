@@ -24,7 +24,7 @@ service cloud.firestore {
      */
     match /coupons/{couponId} {
       allow get, list: if true;
-      allow create: if true;
+      allow create: if request.resource.data.purchaseDate is timestamp;
       allow update, delete: if isAdmin();
     }
     

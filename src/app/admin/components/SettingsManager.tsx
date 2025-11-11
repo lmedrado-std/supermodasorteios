@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,8 +15,23 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const SETTINGS_DOC_PATH = 'settings/raffle';
+
+type RaffleSettings = {
+  valuePerCoupon: number;
+  campaignStartDate?: Timestamp;
+  campaignEndDate?: Timestamp;
+};
 
 export function SettingsManager() {
   const firestore = useFirestore();
@@ -25,17 +40,26 @@ export function SettingsManager() {
     [firestore]
   );
 
-  const { data: settings, isLoading: isLoadingSettings } = useDoc<{
-    valuePerCoupon: number;
-  }>(settingsDocRef);
+  const { data: settings, isLoading: isLoadingSettings } =
+    useDoc<RaffleSettings>(settingsDocRef);
 
   const [valuePerCoupon, setValuePerCoupon] = useState<string>('');
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (settings && typeof settings.valuePerCoupon === 'number') {
-      setValuePerCoupon(String(settings.valuePerCoupon));
+    if (settings) {
+      if (typeof settings.valuePerCoupon === 'number') {
+        setValuePerCoupon(String(settings.valuePerCoupon));
+      }
+      if (settings.campaignStartDate) {
+        setStartDate(settings.campaignStartDate.toDate());
+      }
+      if (settings.campaignEndDate) {
+        setEndDate(settings.campaignEndDate.toDate());
+      }
     }
   }, [settings]);
 
@@ -52,14 +76,26 @@ export function SettingsManager() {
       });
       return;
     }
+    
+    if (startDate && endDate && startDate > endDate) {
+       toast({
+        variant: 'destructive',
+        title: 'Datas Inválidas',
+        description: 'A data de início não pode ser posterior à data de fim.',
+      });
+      return;
+    }
 
     setIsSaving(true);
     try {
-      await setDoc(
-        settingsDocRef,
-        { valuePerCoupon: numericValue },
-        { merge: true }
-      );
+      const dataToSave: any = { 
+          valuePerCoupon: numericValue,
+          campaignStartDate: startDate ? Timestamp.fromDate(startDate) : null,
+          campaignEndDate: endDate ? Timestamp.fromDate(endDate) : null,
+      };
+
+      await setDoc(settingsDocRef, dataToSave, { merge: true });
+
       toast({
         title: 'Sucesso!',
         description: 'Configurações salvas.',
@@ -77,12 +113,45 @@ export function SettingsManager() {
     }
   };
 
+  const DatePicker = ({
+    date,
+    setDate,
+    label,
+  }: {
+    date: Date | undefined;
+    setDate: (date: Date | undefined) => void;
+    label: string;
+  }) => (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant={'outline'}
+            className="w-full justify-start text-left font-normal"
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date ? format(date, 'PPP', { locale: ptBR }) : <span>Escolha uma data</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Configurações do Sorteio</CardTitle>
+        <CardTitle>Configurações da Campanha</CardTitle>
         <CardDescription>
-          Defina as regras para a geração de cupons.
+          Defina as regras para a geração de cupons e o período da campanha.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -92,18 +161,24 @@ export function SettingsManager() {
             <span>Carregando configurações...</span>
           </div>
         ) : (
-          <div className="space-y-2">
-            <Label htmlFor="value-per-coupon">Valor por Cupom (R$)</Label>
-            <Input
-              id="value-per-coupon"
-              type="number"
-              value={valuePerCoupon}
-              onChange={(e) => setValuePerCoupon(e.target.value)}
-              placeholder="Ex: 200"
-            />
-            <p className="text-xs text-muted-foreground">
-              A cada X reais em compras, o cliente ganha 1 cupom.
-            </p>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="value-per-coupon">Valor por Cupom (R$)</Label>
+              <Input
+                id="value-per-coupon"
+                type="number"
+                value={valuePerCoupon}
+                onChange={(e) => setValuePerCoupon(e.target.value)}
+                placeholder="Ex: 200"
+              />
+              <p className="text-xs text-muted-foreground">
+                A cada X reais em compras, o cliente ganha 1 cupom.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <DatePicker date={startDate} setDate={setStartDate} label="Início da Campanha" />
+              <DatePicker date={endDate} setDate={setEndDate} label="Fim da Campanha" />
+            </div>
           </div>
         )}
       </CardContent>

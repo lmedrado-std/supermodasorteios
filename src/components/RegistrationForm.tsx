@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { CheckCircle2, Download, Ticket, Info } from 'lucide-react';
+import { CheckCircle2, Download, Ticket, Info, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   collection,
@@ -24,8 +24,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import html2canvas from 'html2canvas';
 import { CouponLogo } from './CouponLogo';
-import { format } from 'date-fns';
-
+import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
 
 const initialState: {
   message: string | null;
@@ -45,6 +44,8 @@ const initialState: {
 
 type RaffleSettings = {
   valuePerCoupon: number;
+  campaignStartDate?: Timestamp;
+  campaignEndDate?: Timestamp;
 };
 
 function SubmitButton() {
@@ -95,7 +96,7 @@ export function RegistrationForm() {
       try {
         const settingsDocRef = doc(firestore, 'settings/raffle');
         const settingsDoc = await getDoc(settingsDocRef);
-        if (settingsDoc.exists() && settingsDoc.data().valuePerCoupon > 0) {
+        if (settingsDoc.exists()) {
           setRaffleSettings(settingsDoc.data() as RaffleSettings);
         } else {
           // Fallback to a default if not set
@@ -148,8 +149,8 @@ export function RegistrationForm() {
   };
 
   const generateCouponAction = async (formData: FormData) => {
-    if (!firestore) {
-      setState({ message: 'Serviço de banco de dados não disponível.' });
+    if (!firestore || !raffleSettings) {
+      setState({ message: 'Serviço de banco de dados ou configurações não disponíveis.' });
       return;
     }
 
@@ -158,8 +159,9 @@ export function RegistrationForm() {
     const numeroCompra = formData.get('numeroCompra') as string;
     const valorCompraStr = (formData.get('valorCompra') as string).replace(',', '.');
     const valorCompra = parseFloat(valorCompraStr);
+    const dataCompraStr = formData.get('dataCompra') as string;
 
-    if (!nome || !cpf || !numeroCompra || !valorCompraStr) {
+    if (!nome || !cpf || !numeroCompra || !valorCompraStr || !dataCompraStr) {
       setState({ message: 'Preencha todos os campos.' });
       return;
     }
@@ -169,6 +171,27 @@ export function RegistrationForm() {
     }
     if (isNaN(valorCompra) || valorCompra <= 0) {
         setState({ message: 'Valor da compra inválido.' });
+        return;
+    }
+    
+    const dataCompra = parseISO(dataCompraStr);
+    if (isNaN(dataCompra.getTime())) {
+        setState({ message: 'Data da compra inválida.' });
+        return;
+    }
+
+    // Campaign date validation
+    if (raffleSettings.campaignStartDate && raffleSettings.campaignEndDate) {
+        const startDate = startOfDay(raffleSettings.campaignStartDate.toDate());
+        const endDate = endOfDay(raffleSettings.campaignEndDate.toDate());
+        if (dataCompra < startDate || dataCompra > endDate) {
+            setState({
+                message: `A data da compra deve estar entre ${format(startDate, 'dd/MM/yyyy')} e ${format(endDate, 'dd/MM/yyyy')}.`
+            });
+            return;
+        }
+    } else {
+        setState({ message: 'O período da campanha não está configurado. Contate o administrador.' });
         return;
     }
 
@@ -186,7 +209,7 @@ export function RegistrationForm() {
     }
     
     // Use the settings from state
-    const valuePerCoupon = raffleSettings ? raffleSettings.valuePerCoupon : 200;
+    const valuePerCoupon = raffleSettings.valuePerCoupon > 0 ? raffleSettings.valuePerCoupon : 200;
 
     const couponsToGenerate = Math.floor(valorCompra / valuePerCoupon);
 
@@ -222,6 +245,7 @@ export function RegistrationForm() {
                 cpf,
                 purchaseNumber: numeroCompra,
                 purchaseValue: valorCompra,
+                purchaseDate: Timestamp.fromDate(dataCompra),
                 couponNumber: couponNumber,
                 registrationDate: Timestamp.fromDate(registrationDate),
             };
@@ -307,8 +331,8 @@ export function RegistrationForm() {
                     </div>
 
                     <div className="text-left text-xs text-gray-600 space-y-1 pt-4 border-t border-dashed">
-                      <p><span className="font-bold">Data:</span> {state.registrationDate ? format(state.registrationDate, 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
-                      <p><span className="font-bold">Valor:</span> R$ {state.purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}</p>
+                      <p><span className="font-bold">Data Cadastro:</span> {state.registrationDate ? format(state.registrationDate, 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
+                      <p><span className="font-bold">Valor Compra:</span> R$ {state.purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}</p>
                       <p><span className="font-bold">Nº Compra:</span> {state.purchaseNumber ?? 'N/A'}</p>
                     </div>
 
@@ -360,16 +384,31 @@ export function RegistrationForm() {
           <Input id="numeroCompra" name="numeroCompra" placeholder="Ex: 123456" required />
           <p className="text-xs text-muted-foreground mt-1">Este número deve ser o mesmo da nota fiscal para validação na loja.</p>
         </div>
-        <div>
-          <Label htmlFor="valorCompra">Valor da Compra (R$)</Label>
-          <Input id="valorCompra" name="valorCompra" placeholder="Ex: 250,50" required inputMode="decimal" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <Label htmlFor="valorCompra">Valor da Compra (R$)</Label>
+                <Input id="valorCompra" name="valorCompra" placeholder="Ex: 250,50" required inputMode="decimal" />
+            </div>
+            <div>
+                <Label htmlFor="dataCompra">Data da Compra</Label>
+                <Input id="dataCompra" name="dataCompra" type="date" required />
+            </div>
+        </div>
+
            {raffleSettings && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
-                <Info className="h-4 w-4 flex-shrink-0" />
-                <span>A cada <strong>R$ {raffleSettings.valuePerCoupon.toFixed(2).replace('.', ',')}</strong> em compras, você ganha 1 cupom.</span>
+            <div className="mt-2 flex flex-col gap-2 text-sm text-muted-foreground bg-secondary/10 p-3 rounded-lg border border-secondary/20">
+                <div className="flex items-center gap-2">
+                    <Info className="h-4 w-4 flex-shrink-0 text-secondary" />
+                    <span>A cada <strong>R$ {raffleSettings.valuePerCoupon > 0 ? raffleSettings.valuePerCoupon.toFixed(2).replace('.', ',') : 'N/A'}</strong> em compras, você ganha 1 cupom.</span>
+                </div>
+                {raffleSettings.campaignStartDate && raffleSettings.campaignEndDate && (
+                    <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 flex-shrink-0 text-secondary" />
+                        <span>Campanha válida para compras de <strong>{format(raffleSettings.campaignStartDate.toDate(), 'dd/MM/yy')}</strong> a <strong>{format(raffleSettings.campaignEndDate.toDate(), 'dd/MM/yy')}</strong>.</span>
+                    </div>
+                )}
             </div>
            )}
-        </div>
         <SubmitButton />
       </form>
     </div>

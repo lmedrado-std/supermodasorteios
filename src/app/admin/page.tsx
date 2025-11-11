@@ -17,6 +17,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import AdminMenu from './components/AdminMenu';
+import { RaffleManager } from './components/RaffleManager';
 
 export default function AdminPage() {
   const { user, isUserLoading } = useUser();
@@ -82,7 +83,15 @@ export default function AdminPage() {
         </div>
       </header>
       <main className="container mx-auto px-4 py-8 space-y-8">
-        <SettingsManager />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+             <SettingsManager />
+             <RaffleManager />
+          </div>
+          <div className="lg:col-span-1">
+            {/* Você pode adicionar outros cards ou informações aqui no futuro */}
+          </div>
+        </div>
         <AdminTable />
       </main>
     </div>
