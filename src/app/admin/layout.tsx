@@ -33,14 +33,15 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Se HÁ usuário e estamos na página de login, redireciona para o painel.
-    if (user && isLoginPage) {
+    // Se HÁ usuário...
+    // ... e estamos na página de login, redireciona para o painel.
+    if (isLoginPage) {
         router.push('/admin');
         return;
     }
-
-    // Se HÁ usuário, não estamos na página de login e ainda não verificamos se é admin...
-    if (user && !isLoginPage && isAdmin === null && firestore) {
+    
+    // ... e ainda não verificamos se é admin, faz a verificação.
+    if (isAdmin === null && firestore) {
       const checkAdmin = async () => {
         try {
           const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
@@ -74,12 +75,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Tela de carregamento principal enquanto verifica o usuário
-  if (isUserLoading) {
+  // Tela de carregamento principal enquanto verifica o usuário ou o status de admin.
+  if (isUserLoading || (user && !isLoginPage && isAdmin === null)) {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-4">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p>Verificando autenticação...</p>
+        <p>Verificando permissões...</p>
       </div>
     );
   }
@@ -127,7 +128,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-   // Se nenhuma das condições acima for atendida, mostra um loader genérico.
+   // Se nenhuma das condições acima for atendida (ex: usuário não-admin em página de admin), mostra um loader genérico antes de redirecionar.
    return (
        <div className="flex flex-col justify-center items-center h-screen gap-4">
          <Loader2 className="h-8 w-8 animate-spin" />
