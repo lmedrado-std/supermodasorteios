@@ -130,7 +130,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                     Início
                   </Link>
                   <Link href="/meus-cupons" className="hover:text-primary hover:underline px-1 sm:px-2">
-                    Cupons
+                    Meus Cupons
                   </Link>
                    <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2">
                     Regulamento

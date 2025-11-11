@@ -22,7 +22,7 @@ export function Header() {
             Início
           </Link>
           <Link href="/meus-cupons" className="hover:text-primary hover:underline px-1 sm:px-2">
-            Cupons
+            Meus Cupons
           </Link>
            <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2 flex items-center gap-1">
             Regulamento
