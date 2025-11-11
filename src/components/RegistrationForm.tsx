@@ -302,6 +302,9 @@ export function RegistrationForm() {
   };
 
   if (showSuccess) {
+    const couponsCount = state.coupons?.length ?? 0;
+    const showCouponRange = couponsCount > 12;
+
     return (
        <div className="text-center animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
           <Alert
@@ -332,18 +335,26 @@ export function RegistrationForm() {
                     </div>
 
                     {/* Multiple coupons */}
-                    {state.coupons && state.coupons.length > 1 && (
+                    {couponsCount > 1 && (
                         <div className="text-center">
-                            <p className="font-bold mb-2">Seus Cupons (Total: {state.coupons.length})</p>
-                            <ScrollArea className="h-28 w-full rounded-md border p-4">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {state.coupons.slice(0, 12).map(coupon => (
-                                        <div key={coupon} className="border rounded-md p-2 text-center bg-muted/50">
-                                            <p className="font-bold text-sm">🏷️ {coupon}</p>
-                                        </div>
-                                    ))}
+                            <p className="font-bold mb-2">Seus Cupons (Total: {couponsCount})</p>
+                            {showCouponRange ? (
+                                <div className="border rounded-md p-3 text-center bg-muted/50">
+                                    <p className="font-bold text-sm">
+                                        Você gerou {couponsCount} cupons, do {state.coupons?.[0]} ao {state.coupons?.[couponsCount - 1]}.
+                                    </p>
                                 </div>
-                            </ScrollArea>
+                            ) : (
+                                <ScrollArea className="h-28 w-full rounded-md border p-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {state.coupons?.map(coupon => (
+                                            <div key={coupon} className="border rounded-md p-2 text-center bg-muted/50">
+                                                <p className="font-bold text-sm">🏷️ {coupon}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                            )}
                         </div>
                     )}
                     

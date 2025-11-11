@@ -98,6 +98,8 @@ function MeusCuponsPage() {
     }
   };
 
+  const couponsCount = coupons.length;
+  const showCouponRange = couponsCount > 12;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -162,16 +164,24 @@ function MeusCuponsPage() {
                                 {/* Multiple coupons */}
                                 {coupons.length > 1 && (
                                     <div className="text-center">
-                                        <p className="font-bold mb-2">Seus Cupons (Total: {coupons.length})</p>
-                                        <ScrollArea className="h-28 w-full rounded-md border p-4">
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                {coupons.slice(0, 12).map(coupon => (
-                                                    <div key={coupon.id} className="border rounded-md p-2 text-center bg-muted/50">
-                                                        <p className="font-bold text-sm">🏷️ {coupon.couponNumber}</p>
-                                                    </div>
-                                                ))}
+                                        <p className="font-bold mb-2">Seus Cupons (Total: {couponsCount})</p>
+                                        {showCouponRange ? (
+                                            <div className="border rounded-md p-3 text-center bg-muted/50">
+                                                <p className="font-bold text-sm">
+                                                   Você gerou {couponsCount} cupons, do {coupons[0].couponNumber} ao {coupons[couponsCount - 1].couponNumber}.
+                                                </p>
                                             </div>
-                                        </ScrollArea>
+                                        ) : (
+                                            <ScrollArea className="h-28 w-full rounded-md border p-4">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                    {coupons.map(coupon => (
+                                                        <div key={coupon.id} className="border rounded-md p-2 text-center bg-muted/50">
+                                                            <p className="font-bold text-sm">🏷️ {coupon.couponNumber}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </ScrollArea>
+                                        )}
                                     </div>
                                 )}
                                 
