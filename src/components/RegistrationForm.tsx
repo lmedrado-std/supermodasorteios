@@ -28,6 +28,35 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from './ui/scroll-area';
 import { Checkbox } from './ui/checkbox';
 import { CouponListModal } from './CouponListModal';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { CurrencyInput } from './CurrencyInput';
+
+
+const formSchema = z.object({
+  nome: z.string().min(3, { message: 'O nome deve ter no mínimo 3 caracteres.' }),
+  cpf: z.string().refine(val => /^\d{11}$/.test(val.replace(/\D/g, '')), {
+    message: 'CPF inválido. Deve conter 11 dígitos.',
+  }),
+  telefone: z.string().refine(val => /^\d{10,11}$/.test(val.replace(/\D/g, '')), {
+    message: 'Telefone inválido. Deve ter 10 ou 11 dígitos.',
+  }),
+  numeroCompra: z.string().min(1, { message: 'O número da compra é obrigatório.' }),
+  valorCompra: z.number().min(0.01, { message: 'O valor da compra deve ser maior que zero.' }),
+  dataCompra: z.string().min(1, { message: 'A data da compra é obrigatória.' }),
+  quiz: z.enum(['supermoda', 'other-a', 'other-b'], {
+    required_error: 'Você precisa selecionar uma resposta.',
+  }),
+  terms: z.literal<boolean>(true, {
+    errorMap: () => ({ message: 'Você deve aceitar os termos para continuar.' }),
+  }),
+});
+
+
+type FormValues = z.infer<typeof formSchema>;
+
 
 const initialState: {
   message: string | null;
@@ -55,29 +84,10 @@ type RaffleSettings = {
   campaignEndDate?: Timestamp;
 };
 
-function SubmitButton() {
-  const [pending, setPending] = useState(false);
-
-  useEffect(() => {
-    const form = document.querySelector('form');
-    if (!form) return;
-
-    const handleSubmit = () => setPending(true);
-    const handleFormEnd = () => setPending(false);
-
-    form.addEventListener('submit', handleSubmit);
-    // This is a custom event to signal the end of processing
-    document.addEventListener('formProcessingEnd', handleFormEnd);
-    
-    return () => {
-      form.removeEventListener('submit', handleSubmit);
-      document.removeEventListener('formProcessingEnd', handleFormEnd);
-    };
-  }, []);
-
+function SubmitButton({ isPending }: { isPending: boolean }) {
   return (
-    <Button type="submit" className="w-full text-lg py-6" disabled={pending}>
-      {pending ? 'Gerando...' : 'Gerar Cupom(ns)'}
+    <Button type="submit" className="w-full text-lg py-6" disabled={isPending}>
+      {isPending ? 'Gerando...' : 'Gerar Cupom(ns)'}
       <Ticket className="ml-2 h-5 w-5" />
     </Button>
   );
@@ -88,14 +98,22 @@ export function RegistrationForm() {
   const [state, setState] = useState(initialState);
   const [showSuccess, setShowSuccess] = useState(false);
   const [raffleSettings, setRaffleSettings] = useState<RaffleSettings | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
   const couponContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const signalFormEnd = () => {
-    document.dispatchEvent(new CustomEvent('formProcessingEnd'));
-  };
-  
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      nome: '',
+      cpf: '',
+      telefone: '',
+      numeroCompra: '',
+      dataCompra: '',
+    },
+  });
+
+  const { formState, reset } = form;
+
   useEffect(() => {
     if (!firestore) return;
 
@@ -106,7 +124,6 @@ export function RegistrationForm() {
         if (settingsDoc.exists()) {
           setRaffleSettings(settingsDoc.data() as RaffleSettings);
         } else {
-          // Fallback to a default if not set
           setRaffleSettings({ valuePerCoupon: 200 });
         }
       } catch (e) {
@@ -121,22 +138,17 @@ export function RegistrationForm() {
 
   useEffect(() => {
     if (state.message) {
-      // Error from server (e.g., duplicate, db error)
       toast({
         variant: 'destructive',
         title: 'Erro no Cadastro',
         description: state.message,
       });
-      setState(initialState); // Reset state after showing toast
-      signalFormEnd();
+      setState(p => ({ ...p, message: null }));
     } else if (state.coupons && state.coupons.length > 0) {
-      // Success
       setShowSuccess(true);
-      formRef.current?.reset();
-      signalFormEnd();
-      // Auto-hide logic is removed to allow user to save image
+      reset();
     }
-  }, [state, toast]);
+  }, [state, toast, reset]);
 
   const handleSaveCoupon = () => {
     if (couponContainerRef.current) {
@@ -155,67 +167,42 @@ export function RegistrationForm() {
     }
   };
 
-  const generateCouponAction = async (formData: FormData) => {
+  const generateCouponAction = async (formData: FormValues) => {
     if (!firestore || !raffleSettings) {
-      setState({ message: 'Serviço de banco de dados ou configurações não disponíveis.' });
+      setState({ ...initialState, message: 'Serviço de banco de dados ou configurações não disponíveis.' });
       return;
     }
     
-    const termsAccepted = formData.get('terms') as string;
-    if (termsAccepted !== 'on') {
-        setState({ message: 'Você deve declarar que as informações são verídicas para participar.' });
-        return;
-    }
+    const {
+      nome,
+      cpf: rawCpf,
+      telefone: rawTelefone,
+      numeroCompra,
+      valorCompra,
+      dataCompra: dataCompraStr,
+    } = formData;
 
-    const quizAnswer = formData.get('quiz') as string;
-    if (quizAnswer !== 'supermoda') {
-        setState({ message: 'Resposta incorreta. Tente novamente!' });
-        return;
-    }
-
-    const nome = formData.get('nome') as string;
-    const cpf = (formData.get('cpf') as string).replace(/\D/g, '');
-    const telefone = (formData.get('telefone') as string).replace(/\D/g, '');
-    const numeroCompra = formData.get('numeroCompra') as string;
-    const valorCompraStr = (formData.get('valorCompra') as string).replace(',', '.');
-    const valorCompra = parseFloat(valorCompraStr);
-    const dataCompraStr = formData.get('dataCompra') as string;
-
-    if (!nome || !cpf || !telefone || !numeroCompra || !valorCompraStr || !dataCompraStr) {
-      setState({ message: 'Preencha todos os campos.' });
-      return;
-    }
-    if (cpf.length !== 11) {
-      setState({ message: 'CPF deve ter 11 dígitos.' });
-      return;
-    }
-     if (telefone.length < 10) {
-      setState({ message: 'Telefone deve ter no mínimo 10 dígitos (DDD + número).' });
-      return;
-    }
-    if (isNaN(valorCompra) || valorCompra <= 0) {
-        setState({ message: 'Valor da compra inválido.' });
-        return;
-    }
+    const cpf = rawCpf.replace(/\D/g, '');
+    const telefone = rawTelefone.replace(/\D/g, '');
     
     const dataCompra = parseISO(dataCompraStr);
     if (isNaN(dataCompra.getTime())) {
-        setState({ message: 'Data da compra inválida.' });
+        setState({ ...initialState, message: 'Data da compra inválida.' });
         return;
     }
 
-    // Campaign date validation
     if (raffleSettings.campaignStartDate && raffleSettings.campaignEndDate) {
         const startDate = startOfDay(raffleSettings.campaignStartDate.toDate());
         const endDate = endOfDay(raffleSettings.campaignEndDate.toDate());
         if (dataCompra < startDate || dataCompra > endDate) {
             setState({
+                ...initialState,
                 message: `A data da compra deve estar entre ${format(startDate, 'dd/MM/yyyy')} e ${format(endDate, 'dd/MM/yyyy')}.`
             });
             return;
         }
     } else {
-        setState({ message: 'O período da campanha não está configurado. Contate o administrador.' });
+        setState({ ...initialState, message: 'O período da campanha não está configurado. Contate o administrador.' });
         return;
     }
 
@@ -227,18 +214,17 @@ export function RegistrationForm() {
 
     if (!querySnapshot.empty) {
       setState({
+        ...initialState,
         message: 'Este número de compra já foi utilizado para gerar cupons.',
       });
       return;
     }
     
-    // Use the settings from state
     const valuePerCoupon = raffleSettings.valuePerCoupon > 0 ? raffleSettings.valuePerCoupon : 200;
-
     const couponsToGenerate = Math.floor(valorCompra / valuePerCoupon);
 
     if (couponsToGenerate < 1) {
-        setState({ message: `O valor da compra deve ser de no mínimo R$ ${valuePerCoupon.toFixed(2).replace('.',',')} para gerar um cupom.` });
+        setState({ ...initialState, message: `O valor da compra deve ser de no mínimo R$ ${valuePerCoupon.toFixed(2).replace('.',',')} para gerar um cupom.` });
         return;
     }
 
@@ -251,7 +237,6 @@ export function RegistrationForm() {
             if (counterDoc.exists()) {
                 currentNumber = counterDoc.data().lastNumber || 0;
             } else {
-                // Initialize counter if it doesn't exist
                 transaction.set(counterRef, { lastNumber: 0 });
             }
             
@@ -321,9 +306,10 @@ export function RegistrationForm() {
                 requestResourceData: couponDataExample,
             });
             errorEmitter.emit('permission-error', permissionError);
-            setState({ message: 'Erro de permissão. Verifique os detalhes e tente novamente.' });
+            setState({ ...initialState, message: 'Erro de permissão. Verifique os detalhes e tente novamente.' });
         } else {
             setState({
+                ...initialState,
                 message: error.message || 'Erro no servidor. Não foi possível gerar o cupom.',
             });
         }
@@ -437,7 +423,7 @@ export function RegistrationForm() {
                 <Download className="mr-2" /> Baixar Cupom
             </Button>
 
-             <Button variant="outline" onClick={() => { setShowSuccess(false); setState(initialState); }} className="w-full max-w-sm mx-auto">
+             <Button variant="outline" onClick={() => { setShowSuccess(false); setState(initialState); reset(); }} className="w-full max-w-sm mx-auto">
                 Registrar Novo Cupom
             </Button>
           </div>
@@ -447,84 +433,168 @@ export function RegistrationForm() {
 
   return (
     <div className="space-y-6">
-      <form
-        ref={formRef}
-        action={generateCouponAction}
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          generateCouponAction(formData);
-        }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="nome">Nome Completo</Label>
-            <Input id="nome" name="nome" placeholder="Seu nome completo" required />
-          </div>
-          <div>
-            <Label htmlFor="cpf">CPF</Label>
-            <Input
-              id="cpf"
-              name="cpf"
-              placeholder="Apenas números"
-              required
-              maxLength={14}
+       <Form {...form}>
+        <form
+            onSubmit={form.handleSubmit(generateCouponAction)}
+            className="space-y-4"
+        >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="nome"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Nome Completo</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Seu nome completo" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="cpf"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>CPF</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Apenas números" {...field} maxLength={11} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+
+             <FormField
+                control={form.control}
+                name="telefone"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Telefone (WhatsApp)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="(99) 99999-9999" type="tel" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
             />
-          </div>
-        </div>
-         <div>
-          <Label htmlFor="telefone">Telefone (WhatsApp)</Label>
-          <Input id="telefone" name="telefone" placeholder="(99) 99999-9999" required type="tel" />
-        </div>
-        <div>
-          <Label htmlFor="numeroCompra">Número da Compra</Label>
-          <Input id="numeroCompra" name="numeroCompra" placeholder="Ex: 123456" required />
-          <p className="text-xs text-muted-foreground mt-1">Este número deve ser o mesmo da nota fiscal para validação na loja.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <Label htmlFor="valorCompra">Valor da Compra (R$)</Label>
-                <Input id="valorCompra" name="valorCompra" placeholder="Ex: 250,50" required inputMode="decimal" />
-            </div>
-            <div>
-                <Label htmlFor="dataCompra">Data da Compra</Label>
-                <Input id="dataCompra" name="dataCompra" type="date" required />
-            </div>
-        </div>
 
-        <div className="space-y-3">
-          <Label>Qual é a loja que te deixa na moda e ainda te dá a chance de ganhar prêmios?</Label>
-          <RadioGroup name="quiz" required className="flex flex-col">
-            <div className="flex items-center space-x-1.5">
-              <RadioGroupItem value="supermoda" id="r1" />
-              <Label htmlFor="r1" className="font-normal">Claro que é a Supermoda!</Label>
+            <FormField
+                control={form.control}
+                name="numeroCompra"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Número da Compra</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: 123456" {...field} />
+                        </FormControl>
+                         <p className="text-xs text-muted-foreground mt-1">Este número deve ser o mesmo da nota fiscal para validação na loja.</p>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <FormField
+                    control={form.control}
+                    name="valorCompra"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Valor da Compra (R$)</FormLabel>
+                            <FormControl>
+                                <CurrencyInput
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="dataCompra"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Data da Compra</FormLabel>
+                            <FormControl>
+                                <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
             </div>
-            <div className="flex items-center space-x-1.5">
-              <RadioGroupItem value="other-a" id="r2" />
-              <Label htmlFor="r2" className="font-normal">Talvez outra loja...</Label>
-            </div>
-            <div className="flex items-center space-x-1.5">
-              <RadioGroupItem value="other-b" id="r3" />
-              <Label htmlFor="r3" className="font-normal">Ainda estou descobrindo 😄</Label>
-            </div>
-          </RadioGroup>
-        </div>
 
-        <div className="flex items-start space-x-2 pt-2">
-          <Checkbox id="terms" name="terms" required />
-          <div className="grid gap-1.5 leading-none">
-            <label
-              htmlFor="terms"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Declaro que todas as informações são verídicas.
-            </label>
-            <p className="text-sm text-muted-foreground">
-              Estou ciente de que, para a validação do prêmio, deverei cumprir todos os requisitos da promoção.
-            </p>
-          </div>
-        </div>
+            <FormField
+              control={form.control}
+              name="quiz"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Qual é a loja que te deixa na moda e ainda te dá a chance de ganhar prêmios?</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="supermoda" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Claro que é a Supermoda!
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="other-a" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Talvez outra loja...
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="other-b" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Ainda estou descobrindo 😄
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="terms"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                     Declaro que todas as informações são verídicas.
+                    </FormLabel>
+                    <FormDescription>
+                       Estou ciente de que, para a validação do prêmio, deverei cumprir todos os requisitos da promoção.
+                    </FormDescription>
+                     <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+
 
            {raffleSettings && (
             <div className="mt-2 flex flex-col gap-2 text-sm text-muted-foreground bg-secondary/10 p-3 rounded-lg border border-secondary/20">
@@ -540,8 +610,11 @@ export function RegistrationForm() {
                 )}
             </div>
            )}
-        <SubmitButton />
-      </form>
+            <SubmitButton isPending={formState.isSubmitting} />
+        </form>
+       </Form>
     </div>
   );
 }
+
+    
