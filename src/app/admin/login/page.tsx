@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useFirebase, useUser } from '@/firebase';
 import {
   signInWithEmailAndPassword,
-  onAuthStateChanged,
+  createUserWithEmailAndPassword,
 } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,18 +18,15 @@ import {
 } from '@/components/ui/card';
 import { LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
-import { Logo } from '@/components/Logo';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const auth = useAuth();
+  const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
@@ -40,43 +38,74 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    if (!auth || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro de Configuração',
+        description: 'Serviços do Firebase não estão disponíveis.',
+      });
+      return;
+    }
 
-    // Use a fixed email and allow any password for admin login as per original logic.
-    // In a real app, you would validate both.
+    setIsLoading(true);
     const adminEmail = 'admin@supermoda.com';
 
     try {
+      // 1. Tenta fazer o login
       await signInWithEmailAndPassword(auth, adminEmail, password);
-      // Let the useEffect handle the redirect
+      // O useEffect cuidará do redirecionamento
     } catch (error: any) {
-      // If the admin user doesn't exist, create it.
       if (error.code === 'auth/user-not-found') {
+        // 2. Se o usuário não existe, cria o usuário e a role de admin
         try {
-          await signInWithEmailAndPassword(auth, adminEmail, password);
+          const userCredential = await createUserWithEmailAndPassword(
+            auth,
+            adminEmail,
+            password
+          );
+          const newAdminUser = userCredential.user;
+
+          // Cria o documento de role para dar permissão de admin
+          const adminRoleRef = doc(firestore, 'roles_admin', newAdminUser.uid);
+          await setDoc(adminRoleRef, {
+            id: newAdminUser.uid,
+            username: 'admin',
+          });
+
+          toast({
+            title: 'Administrador Criado',
+            description: 'Sua conta de administrador foi criada com sucesso.',
+          });
+          // O login é feito automaticamente após a criação, o useEffect redirecionará
         } catch (creationError: any) {
-            toast({
-                variant: 'destructive',
-                title: 'Erro de Acesso',
-                description: 'Senha incorreta ou usuário não encontrado.',
-            });
+          toast({
+            variant: 'destructive',
+            title: 'Erro ao Criar Admin',
+            description:
+              creationError.message ||
+              'Não foi possível criar o usuário administrador.',
+          });
         }
       } else {
-         toast({
-            variant: 'destructive',
-            title: 'Erro de Acesso',
-            description: 'Senha incorreta.',
-          });
+        // 3. Se for outro erro (senha errada, etc.)
+        toast({
+          variant: 'destructive',
+          title: 'Erro de Acesso',
+          description: 'A senha está incorreta.',
+        });
       }
     } finally {
       setIsLoading(false);
     }
   };
-  
-    if (isUserLoading || user) {
-        return <div className="flex justify-center items-center h-screen">Carregando...</div>;
-    }
 
+  if (isUserLoading || user) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Carregando...
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
