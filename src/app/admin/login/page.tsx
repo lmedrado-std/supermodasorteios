@@ -1,10 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth, useFirebase, useUser } from '@/firebase';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-} from 'firebase/auth';
+import { signInAnonymously } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,9 +26,14 @@ export default function LoginPage() {
   const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  
+  // A senha estática para o painel administrativo.
+  // No futuro, isso pode ser movido para uma variável de ambiente.
+  const ADMIN_SECRET = 'supermoda';
 
   useEffect(() => {
     if (!isUserLoading && user) {
+      // Se o usuário já está logado (anonimamente ou não), redireciona para o painel.
       router.push('/admin');
     }
   }, [user, isUserLoading, router]);
@@ -46,78 +48,48 @@ export default function LoginPage() {
       });
       return;
     }
-
+    
     setIsLoading(true);
-    const adminEmail = 'supermoda@supermoda.com';
+
+    // 1. Verifica se a senha digitada corresponde à senha secreta.
+    if (password !== ADMIN_SECRET) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro de Acesso',
+        description: 'A senha está incorreta.',
+      });
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      // 1. Tenta fazer o login
-      await signInWithEmailAndPassword(auth, adminEmail, password);
-      // O useEffect cuidará do redirecionamento
+      // 2. Faz o login como um usuário anônimo.
+      const userCredential = await signInAnonymously(auth);
+      const anonymousUser = userCredential.user;
+
+      // 3. Concede a role de administrador para este usuário anônimo.
+      // O documento será criado se não existir, garantindo a permissão.
+      const adminRoleRef = doc(firestore, 'roles_admin', anonymousUser.uid);
+      await setDoc(adminRoleRef, {
+        id: anonymousUser.uid,
+        username: 'supermoda_admin_anon',
+      });
+      
+      // O useEffect cuidará do redirecionamento para /admin.
+
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
-        // 2. Se o usuário não existe, cria o usuário e a role de admin
-        if (password.length < 6) {
-          toast({
-              variant: 'destructive',
-              title: 'Senha muito curta',
-              description: 'A senha para o novo admin deve ter no mínimo 6 caracteres.',
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        try {
-          const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            adminEmail,
-            password
-          );
-          const newAdminUser = userCredential.user;
-
-          // Cria o documento de role para dar permissão de admin
-          const adminRoleRef = doc(firestore, 'roles_admin', newAdminUser.uid);
-          await setDoc(adminRoleRef, {
-            id: newAdminUser.uid,
-            username: 'supermoda',
-          });
-
-          toast({
-            title: 'Administrador Criado',
-            description: 'Sua conta de administrador foi criada com sucesso.',
-          });
-          // O login é feito automaticamente após a criação, o useEffect redirecionará
-
-        } catch (creationError: any) {
-           let creationErrorMessage = 'Não foi possível criar o usuário administrador.';
-           if (creationError.code === 'auth/weak-password') {
-             creationErrorMessage = 'A senha é muito fraca. Use pelo menos 6 caracteres.';
-           }
-           toast({
-            variant: 'destructive',
-            title: 'Erro ao Criar Admin',
-            description: creationErrorMessage,
-          });
-        }
-      } else {
-        // 3. Se for outro erro (senha errada, etc.)
-        let errorMessage = 'Ocorreu um erro desconhecido. Verifique sua conexão.';
-        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-            errorMessage = 'A senha está incorreta. Se este for o primeiro acesso, tente uma senha com pelo menos 6 caracteres.';
-        } else if (error.code === 'auth/too-many-requests') {
-            errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
-        }
-        toast({
-          variant: 'destructive',
-          title: 'Erro de Acesso',
-          description: errorMessage,
-        });
-      }
+      console.error("Erro no login anônimo:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro de Autenticação',
+        description: 'Não foi possível fazer o login anônimo. Verifique o console para mais detalhes.',
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Enquanto verifica o estado de autenticação ou se o usuário já está logado, mostra um loading.
   if (isUserLoading || user) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -137,13 +109,13 @@ export default function LoginPage() {
                 Painel Administrativo
               </CardTitle>
               <CardDescription className="text-center pt-2">
-                Acesso restrito. Na primeira vez, a senha digitada será salva.
+                Acesso restrito via senha de segurança.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <Label htmlFor="password">Senha</Label>
+                  <Label htmlFor="password">Senha de Acesso</Label>
                   <Input
                     id="password"
                     name="password"
@@ -151,7 +123,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder='Use no mínimo 6 caracteres'
+                    placeholder='Digite a senha de segurança'
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
