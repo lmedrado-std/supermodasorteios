@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MoreVertical, LogOut, KeyRound } from 'lucide-react';
+import { MoreVertical, LogOut, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { Auth, User, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,12 +35,16 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const { toast } = useToast();
   
   const resetState = () => {
     setCurrentPassword('');
     setNewPassword('');
     setIsUpdating(false);
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -146,31 +150,53 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
           </DialogHeader>
           <form onSubmit={handleChangePassword}>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="current-password" className="text-right">
+              <div className="space-y-2">
+                <Label htmlFor="current-password">
                   Senha Atual
                 </Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="col-span-3"
-                  required
-                />
+                <div className="relative">
+                    <Input
+                    id="current-password"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                    />
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute inset-y-0 right-0 h-full px-3"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    >
+                        {showCurrentPassword ? <EyeOff /> : <Eye />}
+                        <span className="sr-only">{showCurrentPassword ? 'Ocultar' : 'Mostrar'} senha</span>
+                    </Button>
+                </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="new-password" className="text-right">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">
                   Nova Senha
                 </Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="col-span-3"
-                  required
-                />
+                 <div className="relative">
+                    <Input
+                        id="new-password"
+                        type={showNewPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                    />
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute inset-y-0 right-0 h-full px-3"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                        {showNewPassword ? <EyeOff /> : <Eye />}
+                         <span className="sr-only">{showNewPassword ? 'Ocultar' : 'Mostrar'} senha</span>
+                    </Button>
+                </div>
               </div>
             </div>
             <DialogFooter>
