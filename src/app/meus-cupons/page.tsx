@@ -123,24 +123,22 @@ function MeusCuponsPage() {
                 <div className="mt-8">
                   {coupons.length > 0 ? (
                     <div className="space-y-4">
-                       <h3 className="text-lg font-semibold text-center">
+                      <h3 className="text-lg font-semibold text-center">
                         Cupons encontrados para {coupons[0].fullName}:
                       </h3>
-                      <ul className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      <ul className="space-y-3">
                         {coupons.map((coupon) => (
                           <li
                             key={coupon.id}
-                            className="bg-primary/10 border border-primary/20 rounded-md p-4 text-center"
+                            className="bg-primary/10 border border-primary/20 rounded-md p-4"
                           >
-                            <p className="font-bold text-xl text-primary tracking-wider">
+                            <p className="font-bold text-xl text-primary tracking-wider text-center">
                               {coupon.couponNumber}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(
-                                coupon.registrationDate.toDate(),
-                                'dd/MM/yy'
-                              )}
-                            </p>
+                            <div className="mt-2 text-sm text-muted-foreground space-y-1 text-center sm:text-left">
+                               <p><span className="font-semibold">Nº da Compra:</span> {coupon.purchaseNumber}</p>
+                               <p><span className="font-semibold">Data:</span> {format(coupon.registrationDate.toDate(),'dd/MM/yyyy HH:mm:ss')}</p>
+                            </div>
                           </li>
                         ))}
                       </ul>

@@ -256,6 +256,7 @@ export function RegistrationForm() {
           <div>
             <Label htmlFor="numeroCompra">Número da Compra</Label>
             <Input id="numeroCompra" name="numeroCompra" placeholder="Ex: 123456" required />
+            <p className="text-xs text-muted-foreground mt-1">Este número deve ser o mesmo da nota fiscal para validação na loja.</p>
           </div>
           <div>
             <Label htmlFor="valorCompra">Valor da Compra (R$)</Label>
