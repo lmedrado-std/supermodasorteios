@@ -169,9 +169,7 @@ function MeusCuponsPage() {
 
                                 <div className="pt-4 flex flex-col items-center justify-center gap-4">
                                     <CouponLogo className="w-40 h-auto" />
-                                    <div className="p-1 border-2 border-amber-400 rounded-lg inline-block">
-                                       <QRCodePlaceholder className="w-28 h-28" />
-                                    </div>
+                                    <QRCodePlaceholder className="w-28 h-28" />
                                 </div>
 
                                 <div className="flex justify-between items-center pt-4">
