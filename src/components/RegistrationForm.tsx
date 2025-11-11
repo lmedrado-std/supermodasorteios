@@ -243,7 +243,6 @@ export function RegistrationForm() {
     }
 
     const counterRef = doc(firestore, 'counters', 'coupons');
-    const registrationDate = new Date();
 
     try {
         const generatedCoupons = await runTransaction(firestore, async (transaction) => {
@@ -272,25 +271,20 @@ export function RegistrationForm() {
                     purchaseValue: valorCompra,
                     purchaseDate: Timestamp.fromDate(dataCompra),
                     couponNumber: couponNumber,
-                    registrationDate: Timestamp.fromDate(registrationDate),
+                    registrationDate: serverTimestamp(),
                 };
                 couponDataList.push(couponData);
             }
             
-            // Note: We don't commit the batch inside the transaction.
-            // We stage the writes and commit outside, or stage transaction writes.
             const finalCounterNumber = currentNumber + couponsToGenerate;
             transaction.set(counterRef, { lastNumber: finalCounterNumber }, { merge: true });
 
-            // We return the data to be written outside the transaction's read phase.
             return { newCoupons, couponDataList };
         });
 
-        // Now, perform the batch write outside the transaction.
         const batch = writeBatch(firestore);
         generatedCoupons.couponDataList.forEach(couponData => {
             const couponRef = doc(collection(firestore, 'coupons'));
-            // Add id to couponData
             const finalCouponData = { ...couponData, id: couponRef.id };
             batch.set(couponRef, finalCouponData);
         });
@@ -304,7 +298,7 @@ export function RegistrationForm() {
             telefone: telefone,
             purchaseValue: valorCompra,
             purchaseNumber: numeroCompra,
-            registrationDate: registrationDate,
+            registrationDate: new Date(),
             purchaseDate: dataCompra,
         });
 
@@ -318,7 +312,7 @@ export function RegistrationForm() {
                 purchaseValue: valorCompra,
                 purchaseDate: Timestamp.fromDate(dataCompra),
                 couponNumber: "SM-XXXXX",
-                registrationDate: Timestamp.fromDate(registrationDate),
+                registrationDate: serverTimestamp(),
             };
 
             const permissionError = new FirestorePermissionError({
@@ -327,10 +321,8 @@ export function RegistrationForm() {
                 requestResourceData: couponDataExample,
             });
             errorEmitter.emit('permission-error', permissionError);
-            // We set a generic message because the detailed error will be shown in the overlay
             setState({ message: 'Erro de permissão. Verifique os detalhes e tente novamente.' });
         } else {
-            // Handle other errors (network, transaction failure, etc.)
             setState({
                 message: error.message || 'Erro no servidor. Não foi possível gerar o cupom.',
             });
