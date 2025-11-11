@@ -26,6 +26,7 @@ service cloud.firestore {
       allow create: if request.auth == null // Allow anonymous/public creation
                     && request.resource.data.fullName is string
                     && request.resource.data.cpf is string
+                    && request.resource.data.telefone is string
                     && request.resource.data.purchaseNumber is string
                     && request.resource.data.purchaseValue is number
                     && request.resource.data.purchaseDate is timestamp

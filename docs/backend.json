@@ -18,6 +18,10 @@
           "type": "string",
           "description": "CPF (Brazilian national ID) of the customer. Must have 11 digits."
         },
+        "telefone": {
+          "type": "string",
+          "description": "Customer's phone number, preferably WhatsApp."
+        },
         "purchaseNumber": {
           "type": "string",
           "description": "Purchase number associated with the coupon."
@@ -45,6 +49,7 @@
         "id",
         "fullName",
         "cpf",
+        "telefone",
         "purchaseNumber",
         "purchaseValue",
         "purchaseDate",
@@ -106,9 +111,10 @@
             "couponNumber": { "type": "string" },
             "fullName": { "type": "string" },
             "cpf": { "type": "string" },
+            "telefone": { "type": "string" },
             "drawDate": { "type": "string", "format": "date-time" }
         },
-        "required": ["id", "couponId", "couponNumber", "fullName", "cpf", "drawDate"]
+        "required": ["id", "couponId", "couponNumber", "fullName", "cpf", "telefone", "drawDate"]
     }
   },
   "auth": {

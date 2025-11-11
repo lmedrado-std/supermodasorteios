@@ -37,6 +37,7 @@ type Coupon = {
   id: string;
   fullName: string;
   cpf: string;
+  telefone: string;
   purchaseNumber: string;
   purchaseValue: number;
   couponNumber: string;
@@ -153,6 +154,7 @@ export function AdminTable() {
                 <TableHead className="font-bold">Cupom</TableHead>
                 <TableHead className="font-bold">Nome</TableHead>
                 <TableHead className="font-bold">CPF</TableHead>
+                <TableHead className="font-bold">Telefone</TableHead>
                 <TableHead className="font-bold">Nº da Compra</TableHead>
                 <TableHead className="font-bold text-right">Valor (R$)</TableHead>
                 <TableHead className="text-center font-bold">
@@ -165,7 +167,7 @@ export function AdminTable() {
               {isLoading && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="text-center h-24 text-muted-foreground"
                   >
                     Carregando cupons...
@@ -185,6 +187,7 @@ export function AdminTable() {
                         '$1.$2.$3-$4'
                       )}
                     </TableCell>
+                    <TableCell>{coupon.telefone}</TableCell>
                     <TableCell>{coupon.purchaseNumber}</TableCell>
                      <TableCell className="text-right">
                       {coupon.purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}
@@ -225,7 +228,7 @@ export function AdminTable() {
                 !isLoading && (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="text-center h-24 text-muted-foreground"
                     >
                       Nenhum cupom gerado ainda.

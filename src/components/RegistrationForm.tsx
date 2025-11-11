@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { CheckCircle2, Download, Ticket, Info, Calendar, ShoppingCart, DollarSign, Clock, List } from 'lucide-react';
+import { CheckCircle2, Download, Ticket, Info, Calendar, ShoppingCart, DollarSign, Clock, List, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   collection,
@@ -33,6 +33,7 @@ const initialState: {
   message: string | null;
   coupons?: string[];
   fullName?: string | null;
+  telefone?: string | null;
   purchaseValue?: number | null;
   purchaseNumber?: string | null;
   registrationDate?: Date | null;
@@ -41,6 +42,7 @@ const initialState: {
   message: null,
   coupons: [],
   fullName: null,
+  telefone: null,
   purchaseValue: null,
   purchaseNumber: null,
   registrationDate: null,
@@ -173,17 +175,22 @@ export function RegistrationForm() {
 
     const nome = formData.get('nome') as string;
     const cpf = (formData.get('cpf') as string).replace(/\D/g, '');
+    const telefone = (formData.get('telefone') as string).replace(/\D/g, '');
     const numeroCompra = formData.get('numeroCompra') as string;
     const valorCompraStr = (formData.get('valorCompra') as string).replace(',', '.');
     const valorCompra = parseFloat(valorCompraStr);
     const dataCompraStr = formData.get('dataCompra') as string;
 
-    if (!nome || !cpf || !numeroCompra || !valorCompraStr || !dataCompraStr) {
+    if (!nome || !cpf || !telefone || !numeroCompra || !valorCompraStr || !dataCompraStr) {
       setState({ message: 'Preencha todos os campos.' });
       return;
     }
     if (cpf.length !== 11) {
       setState({ message: 'CPF deve ter 11 dígitos.' });
+      return;
+    }
+     if (telefone.length < 10) {
+      setState({ message: 'Telefone deve ter no mínimo 10 dígitos (DDD + número).' });
       return;
     }
     if (isNaN(valorCompra) || valorCompra <= 0) {
@@ -260,6 +267,7 @@ export function RegistrationForm() {
                 const couponData = {
                     fullName: nome,
                     cpf,
+                    telefone,
                     purchaseNumber: numeroCompra,
                     purchaseValue: valorCompra,
                     purchaseDate: Timestamp.fromDate(dataCompra),
@@ -293,6 +301,7 @@ export function RegistrationForm() {
             message: null,
             coupons: generatedCoupons.newCoupons,
             fullName: nome,
+            telefone: telefone,
             purchaseValue: valorCompra,
             purchaseNumber: numeroCompra,
             registrationDate: registrationDate,
@@ -304,6 +313,7 @@ export function RegistrationForm() {
             const couponDataExample = {
                 fullName: nome,
                 cpf,
+                telefone,
                 purchaseNumber: numeroCompra,
                 purchaseValue: valorCompra,
                 purchaseDate: Timestamp.fromDate(dataCompra),
@@ -455,19 +465,25 @@ export function RegistrationForm() {
           generateCouponAction(formData);
         }}
       >
-        <div>
-          <Label htmlFor="nome">Nome Completo</Label>
-          <Input id="nome" name="nome" placeholder="Seu nome completo" required />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="nome">Nome Completo</Label>
+            <Input id="nome" name="nome" placeholder="Seu nome completo" required />
+          </div>
+          <div>
+            <Label htmlFor="cpf">CPF</Label>
+            <Input
+              id="cpf"
+              name="cpf"
+              placeholder="Apenas números"
+              required
+              maxLength={14}
+            />
+          </div>
         </div>
-        <div>
-          <Label htmlFor="cpf">CPF</Label>
-          <Input
-            id="cpf"
-            name="cpf"
-            placeholder="Apenas números"
-            required
-            maxLength={11}
-          />
+         <div>
+          <Label htmlFor="telefone">Telefone (WhatsApp)</Label>
+          <Input id="telefone" name="telefone" placeholder="(99) 99999-9999" required type="tel" />
         </div>
         <div>
           <Label htmlFor="numeroCompra">Número da Compra</Label>

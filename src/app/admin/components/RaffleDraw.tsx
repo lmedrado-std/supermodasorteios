@@ -12,7 +12,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { PartyPopper, Ticket, User, Trophy, Calendar, DollarSign, ShoppingCart, Loader2, Sparkles } from 'lucide-react';
+import { PartyPopper, Ticket, User, Trophy, Calendar, DollarSign, ShoppingCart, Loader2, Sparkles, Phone } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +31,7 @@ type Coupon = {
   id: string;
   fullName: string;
   cpf: string;
+  telefone: string;
   couponNumber: string;
   purchaseValue: number;
   purchaseDate: Timestamp;
@@ -221,6 +222,14 @@ export function RaffleDraw() {
                 <div className="text-left">
                   <p className="text-xs text-muted-foreground">Nome</p>
                   <p className="font-bold text-gray-900">{winnerInfo.fullName}</p>
+                </div>
+              </div>
+              
+               <div className="flex items-center gap-3 bg-gradient-to-r from-teal-50 to-cyan-50 p-3 rounded-lg hover:shadow-md transition">
+                <Phone className="h-5 w-5 text-teal-600 flex-shrink-0" />
+                <div className="text-left">
+                  <p className="text-xs text-muted-foreground">Telefone</p>
+                  <p className="font-bold text-gray-900">{winnerInfo.telefone}</p>
                 </div>
               </div>
 
