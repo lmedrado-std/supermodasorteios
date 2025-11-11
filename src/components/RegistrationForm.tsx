@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { CheckCircle2, Ticket } from 'lucide-react';
+import { CheckCircle2, Download, Ticket } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   collection,
@@ -15,18 +15,21 @@ import {
   runTransaction,
   doc,
   serverTimestamp,
-  Firestore,
 } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import html2canvas from 'html2canvas';
+import { Logo } from './Logo';
 
 const initialState: {
   message: string | null;
   coupon?: string | null;
+  fullName?: string | null;
 } = {
   message: null,
   coupon: null,
+  fullName: null,
 };
 
 function SubmitButton() {
@@ -69,6 +72,7 @@ export function RegistrationForm() {
   const [state, setState] = useState(initialState);
   const [showSuccess, setShowSuccess] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const couponRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -79,7 +83,7 @@ export function RegistrationForm() {
       const timer = setTimeout(() => {
         setShowSuccess(false);
         setState(initialState); // Reset state
-      }, 10000);
+      }, 20000); // Increased time to allow saving
       return () => clearTimeout(timer);
     } else if (state.message) {
       // Error from server (e.g., duplicate, db error)
@@ -91,6 +95,21 @@ export function RegistrationForm() {
       setState(initialState); // Reset state after showing toast
     }
   }, [state, toast]);
+
+  const handleSaveCoupon = () => {
+    if (couponRef.current) {
+      html2canvas(couponRef.current, {
+        backgroundColor: null, // Use element's background
+        scale: 2, // Increase resolution
+      }).then((canvas) => {
+        const link = document.createElement('a');
+        link.download = `cupom-supermoda-${state.coupon}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+  };
+
 
   const generateCouponAction = async (formData: FormData) => {
     if (!firestore) {
@@ -157,6 +176,7 @@ export function RegistrationForm() {
       setState({
         message: 'Cadastro realizado com sucesso!',
         coupon: newCouponNumberStr,
+        fullName: nome,
       });
     }).catch((error: any) => {
       // This is our new, detailed error handling.
@@ -179,49 +199,70 @@ export function RegistrationForm() {
 
   return (
     <div className="space-y-6">
-      <form
-        ref={formRef}
-        action={generateCouponAction}
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          generateCouponAction(new FormData(e.currentTarget));
-        }}
-      >
-        <div>
-          <Label htmlFor="nome">Nome Completo</Label>
-          <Input id="nome" name="nome" placeholder="Seu nome completo" required />
-        </div>
-        <div>
-          <Label htmlFor="cpf">CPF</Label>
-          <Input
-            id="cpf"
-            name="cpf"
-            placeholder="Apenas números"
-            required
-            maxLength={11}
-            pattern="\d{11}"
-          />
-        </div>
-        <div>
-          <Label htmlFor="numeroCompra">Número da Compra</Label>
-          <Input id="numeroCompra" name="numeroCompra" placeholder="Ex: 123456" required />
-        </div>
-        <SubmitButton />
-      </form>
+      {!showSuccess && (
+        <form
+          ref={formRef}
+          action={generateCouponAction}
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            generateCouponAction(new FormData(e.currentTarget));
+          }}
+        >
+          <div>
+            <Label htmlFor="nome">Nome Completo</Label>
+            <Input id="nome" name="nome" placeholder="Seu nome completo" required />
+          </div>
+          <div>
+            <Label htmlFor="cpf">CPF</Label>
+            <Input
+              id="cpf"
+              name="cpf"
+              placeholder="Apenas números"
+              required
+              maxLength={11}
+              pattern="\d{11}"
+            />
+          </div>
+          <div>
+            <Label htmlFor="numeroCompra">Número da Compra</Label>
+            <Input id="numeroCompra" name="numeroCompra" placeholder="Ex: 123456" required />
+          </div>
+          <SubmitButton />
+        </form>
+      )}
 
       {showSuccess && state.coupon && (
-        <Alert
-          variant="default"
-          className="bg-green-100 border-green-400 text-green-700 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300"
-        >
-          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <AlertTitle>Sucesso!</AlertTitle>
-          <AlertDescription>
-            {state.message} Seu número da sorte é:{' '}
-            <span className="font-bold text-lg">{state.coupon}</span>
-          </AlertDescription>
-        </Alert>
+        <div className="text-center">
+            <Alert
+              variant="default"
+              className="mb-4 bg-green-100 border-green-400 text-green-700 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300"
+            >
+              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertTitle>Sucesso!</AlertTitle>
+              <AlertDescription>
+                Seu cupom foi gerado! Salve a imagem abaixo.
+              </AlertDescription>
+            </Alert>
+
+            <div ref={couponRef} className="bg-card p-6 rounded-lg border-2 border-dashed border-primary/50 shadow-lg inline-block">
+                <div className="text-center space-y-4">
+                    <Logo className="h-10 w-auto mx-auto"/>
+                    <p className="text-muted-foreground">Parabéns pelo seu cupom!</p>
+                    <p className="text-lg font-bold">{state.fullName}</p>
+                    <div className="bg-primary text-primary-foreground rounded-md px-6 py-3">
+                        <p className="text-sm">Seu Número da Sorte é:</p>
+                        <p className="text-3xl font-bold tracking-wider">{state.coupon}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground pt-2">Boa Sorte!</p>
+                </div>
+            </div>
+
+            <Button onClick={handleSaveCoupon} className="mt-6 w-full max-w-xs mx-auto">
+                Salvar Imagem
+                <Download className="ml-2 h-4 w-4" />
+            </Button>
+        </div>
       )}
     </div>
   );
