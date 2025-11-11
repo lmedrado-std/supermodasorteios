@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { generateCoupon } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,7 @@ function SubmitButton() {
 }
 
 export function RegistrationForm() {
-  const [state, dispatch] = useFormState(generateCoupon, initialState);
+  const [state, dispatch] = useActionState(generateCoupon, initialState);
   const [showSuccess, setShowSuccess] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
