@@ -1,19 +1,53 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { getAllCoupons, logout } from '@/app/actions';
+'use client';
+import { useAuth, useFirebase, useUser } from '@/firebase';
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
+import { useEffect } from 'react';
 import { AdminTable } from './components/AdminTable';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import Link from 'next/link';
+import { doc, getDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
-export default async function AdminPage() {
-  const authCookie = cookies().get('supermoda_auth');
-  if (!authCookie || authCookie.value !== 'true') {
-    redirect('/admin/login');
+export default function AdminPage() {
+  const { user, isUserLoading } = useUser();
+  const { auth, firestore } = useFirebase();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/admin/login');
+    } else if (user && firestore) {
+      const checkAdmin = async () => {
+        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+        const adminDoc = await getDoc(adminRoleRef);
+        if (!adminDoc.exists()) {
+          router.push('/admin/login');
+        }
+      };
+      checkAdmin();
+    }
+  }, [user, isUserLoading, firestore, router]);
+
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth);
+      router.push('/admin/login');
+    }
+  };
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Carregando...
+      </div>
+    );
   }
-
-  const coupons = await getAllCoupons();
 
   return (
     <div className="min-h-screen bg-background">
@@ -22,8 +56,15 @@ export default async function AdminPage() {
           <Link href="/">
             <Logo className="h-8 md:h-10 w-auto" />
           </Link>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline">Cupons Gerados</h1>
-          <form action={logout}>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline">
+            Cupons Gerados
+          </h1>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleLogout();
+            }}
+          >
             <Button type="submit" variant="outline">
               <span className="hidden sm:inline">Sair</span>
               <LogOut className="h-4 w-4 sm:ml-2" />
@@ -32,7 +73,7 @@ export default async function AdminPage() {
         </div>
       </header>
       <main className="container mx-auto px-4 py-8">
-        <AdminTable coupons={coupons} />
+        <AdminTable />
       </main>
     </div>
   );
