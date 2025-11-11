@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, getDocs, addDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -32,7 +32,7 @@ type Coupon = {
   cpf: string;
   couponNumber: string;
   purchaseValue: number;
-  purchaseDate: { seconds: number, nanoseconds: number };
+  purchaseDate: Timestamp; // Alterado para Timestamp
 };
 
 type WinnerInfo = Coupon & { drawDate: Date };
@@ -46,14 +46,11 @@ export function RaffleDraw() {
   const [drawState, setDrawState] = useState<DrawState>('idle');
   const [displayedNumber, setDisplayedNumber] = useState('SM-00000');
   
-  // Use a query for coupons to get all documents
   const couponsQuery = useMemoFirebase(
     () => firestore ? collection(firestore, 'coupons') : null,
     [firestore]
   );
   
-  // We don't need a real-time listener here, we'll fetch when drawing.
-  // This is just to get an initial count for the button.
   const { data: coupons, isLoading: isCouponsLoading } = useCollection(couponsQuery);
 
   useEffect(() => {
@@ -63,7 +60,7 @@ export function RaffleDraw() {
       intervalId = setInterval(() => {
         const randomNumber = Math.floor(Math.random() * 99999) + 1;
         setDisplayedNumber(`SM-${String(randomNumber).padStart(5, '0')}`);
-      }, 80); // Fast spinning effect
+      }, 80); // Efeito de giro rápido
     }
 
     return () => clearInterval(intervalId);
@@ -90,34 +87,34 @@ export function RaffleDraw() {
       
       const allCoupons = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Coupon));
 
-      const spinDuration = 4000 + Math.random() * 2000; // 4-6 seconds of spin
+      // Duração da animação de suspense
+      const spinDuration = 4000 + Math.random() * 2000; // 4-6 segundos de giro
 
       setTimeout(() => {
         const randomIndex = Math.floor(Math.random() * allCoupons.length);
         const drawnCoupon = allCoupons[randomIndex];
-        const winnerData: WinnerInfo = { ...drawnCoupon, drawDate: new Date() };
+        const drawDate = new Date(); // Captura a data/hora exata do sorteio
         
-        setDisplayedNumber(winnerData.couponNumber); // Show the final winning number
+        setDisplayedNumber(drawnCoupon.couponNumber); // Mostra o número vencedor
         setDrawState('revealing');
 
+        // Aguarda um momento para revelar os detalhes
         setTimeout(async () => {
+          const winnerData: WinnerInfo = { ...drawnCoupon, drawDate };
           setWinner(winnerData);
           setDrawState('complete');
           
-          // Save winner to Firestore
-          const winnersRef = collection(firestore, 'winners');
-          await addDoc(winnersRef, {
-            ...winnerData,
-            // Convert JS date back to Firestore Timestamp for storage
-            purchaseDate: winnerData.purchaseDate,
-            drawDate: winnerData.drawDate,
+          // Salva o ganhador no Firestore
+          await addDoc(collection(firestore, 'winners'), {
+            ...drawnCoupon, // Salva todos os dados do cupom
+            drawDate: Timestamp.fromDate(drawDate), // Converte a data para o formato do Firestore
           });
 
           toast({
             title: 'Sorteio Realizado!',
             description: `O cupom ${winnerData.couponNumber} é o vencedor!`,
           });
-        }, 1500); // 1.5 seconds reveal time
+        }, 1500); // 1.5 segundos para o tempo de revelação
         
       }, spinDuration);
 
@@ -142,8 +139,8 @@ export function RaffleDraw() {
             <div className="mt-4 text-left space-y-2 text-sm">
                 <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground"/> <strong>Nome:</strong> {winnerInfo.fullName}</p>
                 <p className="flex items-center gap-2"><Ticket className="h-4 w-4 text-muted-foreground"/> <strong>CPF:</strong> {winnerInfo.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</p>
-                <p className="flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-muted-foreground"/> <strong>Valor:</strong> R$ {winnerInfo.purchaseValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                <p className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground"/> <strong>Data Compra:</strong> {format(new Date(winnerInfo.purchaseDate.seconds * 1000), 'dd/MM/yyyy')}</p>
+                <p className="flex items-center gap-2"><DollarSign className="h-4 w-4 text-muted-foreground"/> <strong>Valor:</strong> R$ {winnerInfo.purchaseValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                <p className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground"/> <strong>Data Compra:</strong> {format(winnerInfo.purchaseDate.toDate(), 'dd/MM/yyyy')}</p>
             </div>
              <p className="text-xs text-muted-foreground mt-4">
                 Sorteio realizado em: {format(winnerInfo.drawDate, 'dd/MM/yyyy HH:mm')}
@@ -165,7 +162,7 @@ export function RaffleDraw() {
         {drawState === 'idle' && !winner && (
             <div className="text-center text-muted-foreground">
                 <p>Pronto para descobrir o próximo ganhador?</p>
-                <p className="font-bold text-lg mt-2">{coupons?.length ?? 0} cupons participando.</p>
+                <p className="font-bold text-lg mt-2">{isCouponsLoading ? 'Calculando...' : `${coupons?.length ?? 0} cupons participando.`}</p>
             </div>
         )}
         {drawState === 'spinning' || drawState === 'revealing' ? (
@@ -186,7 +183,7 @@ export function RaffleDraw() {
       <CardFooter>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button disabled={drawState !== 'idle' && drawState !== 'complete' || isCouponsLoading || !coupons || coupons.length === 0}>
+            <Button disabled={drawState === 'spinning' || drawState === 'revealing' || isCouponsLoading || !coupons || coupons.length === 0}>
               {drawState === 'spinning' || drawState === 'revealing' ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
