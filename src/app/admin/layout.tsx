@@ -64,16 +64,29 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-muted/40">
       <header className="bg-background shadow-sm sticky top-0 z-10">
         <div className="container mx-auto flex items-center justify-between p-4">
-          <Link href="/">
-            <Logo className="h-8 md:h-10 w-auto" />
-          </Link>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline">
-            Painel Administrativo
-          </h1>
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <Logo className="h-8 md:h-10 w-auto" />
+            </Link>
+            <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline hidden md:block">
+              Painel Administrativo
+            </h1>
+          </div>
+          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
+              <Link href="/" className="hover:text-primary hover:underline">
+                Início
+              </Link>
+              <Link href="/meus-cupons" className="hover:text-primary hover:underline">
+                Meus Cupons
+              </Link>
+          </nav>
           <AdminMenu user={user} auth={auth} onLogout={handleLogout} />
         </div>
       </header>
       <main className="container mx-auto px-4 py-8">
+        <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline mb-4 md:hidden">
+            Painel Administrativo
+        </h1>
         {children}
       </main>
     </div>
