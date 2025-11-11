@@ -49,7 +49,7 @@ export default function LoginPage() {
     }
     
     setIsLoggingIn(true);
-    const email = 'admin@supermoda.com';
+    const email = 'pix@nasupermoda.com';
 
     try {
       // Tenta fazer o login primeiro
