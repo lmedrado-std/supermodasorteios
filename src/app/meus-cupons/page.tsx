@@ -20,10 +20,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search, Download, Calendar, ShoppingCart, DollarSign, Clock, List } from 'lucide-react';
+import { Search, Download, Calendar, ShoppingCart, DollarSign, Clock } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { CouponListModal } from '@/components/CouponListModal';
 
 type Coupon = {
@@ -37,15 +36,124 @@ type Coupon = {
   purchaseDate: Timestamp;
 };
 
+type GroupedCoupons = {
+  [key: string]: Coupon[];
+};
+
+const CouponCard = ({ purchaseCoupons }: { purchaseCoupons: Coupon[] }) => {
+    const couponContainerRef = useRef<HTMLDivElement>(null);
+    const firstCoupon = purchaseCoupons[0];
+    const couponsCount = purchaseCoupons.length;
+    const showCouponRange = couponsCount > 12;
+
+    const handleSaveCoupon = () => {
+        if (couponContainerRef.current) {
+        html2canvas(couponContainerRef.current, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: null,
+        }).then((canvas) => {
+            const link = document.createElement('a');
+            link.download = `cupom-supermoda-${firstCoupon.purchaseNumber}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+        }
+    };
+
+    return (
+        <div className="flex flex-col items-center gap-6">
+            <div ref={couponContainerRef} className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border">
+                <div className="bg-primary p-4 text-center">
+                    <h2 className="text-2xl font-bold text-primary-foreground font-headline flex items-center justify-center gap-2">
+                        🎟️ Sorteio Supermoda!
+                    </h2>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                    <div className="text-center">
+                        <p className="text-5xl font-black tracking-wider" style={{color: '#e30613'}}>{firstCoupon.couponNumber}</p>
+                        <p className="text-lg text-muted-foreground mt-1">{firstCoupon.fullName}</p>
+                    </div>
+
+                    {couponsCount > 1 && (
+                        <div className="text-center">
+                            <p className="font-bold mb-2">Seus Cupons nesta Compra (Total: {couponsCount})</p>
+                            {showCouponRange ? (
+                                <div className="border rounded-md p-3 text-center bg-muted/50">
+                                    <p className="font-bold text-sm">
+                                        🎟️ Você possui {couponsCount} cupons!
+                                    </p>
+                                    <p className="font-semibold text-sm text-primary">{purchaseCoupons[0].couponNumber} a {purchaseCoupons[couponsCount - 1].couponNumber}</p>
+                                    <CouponListModal coupons={purchaseCoupons.map(c => c.couponNumber)} />
+                                </div>
+                            ) : (
+                               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {purchaseCoupons.map(coupon => (
+                                        <div key={coupon.id} className="border rounded-md p-2 text-center bg-muted/50">
+                                            <p className="font-bold text-sm">🏷️ {coupon.couponNumber}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
+                    <div className="border-t-2 border-dashed w-full"></div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm text-left">
+                        <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-muted-foreground"/>
+                            <div>
+                                <p className="font-bold">Valor da Compra</p>
+                                <p>R$ {firstCoupon.purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <ShoppingCart className="h-4 w-4 text-muted-foreground"/>
+                            <div>
+                                <p className="font-bold">Nº da Compra</p>
+                                <p>{firstCoupon.purchaseNumber ?? 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground"/>
+                            <div>
+                                <p className="font-bold">Data da Compra</p>
+                                <p>{firstCoupon.purchaseDate ? format(firstCoupon.purchaseDate.toDate(), 'dd/MM/yyyy') : 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground"/>
+                            <div>
+                                <p className="font-bold">Data do Cadastro</p>
+                                <p>{firstCoupon.registrationDate ? format(firstCoupon.registrationDate.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-muted p-4 mt-4 text-center">
+                    <p className="text-sm font-bold text-muted-foreground">❤️ Supermoda!</p>
+                    <p className="text-xs text-muted-foreground">Boa sorte no sorteio!</p>
+                </div>
+            </div>
+            <Button onClick={handleSaveCoupon} size="lg" className="bg-[#e30613] text-white hover:bg-[#f5b800] w-full max-w-md">
+                <Download className="mr-2" /> Baixar Cupom da Compra
+            </Button>
+        </div>
+    );
+};
+
+
 function MeusCuponsPage() {
   const firestore = useFirestore();
   const [cpf, setCpf] = useState('');
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [groupedCoupons, setGroupedCoupons] = useState<GroupedCoupons>({});
   const [isLoading, setIsLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const couponContainerRef = useRef<HTMLDivElement>(null);
-
+  const [totalCoupons, setTotalCoupons] = useState(0);
+  const [fullName, setFullName] = useState('');
 
   const handleSearch = async () => {
     if (!firestore) return;
@@ -57,8 +165,10 @@ function MeusCuponsPage() {
 
     setIsLoading(true);
     setSearched(true);
-    setCoupons([]);
+    setGroupedCoupons({});
     setError(null);
+    setTotalCoupons(0);
+    setFullName('');
 
     try {
       const q = query(
@@ -70,11 +180,28 @@ function MeusCuponsPage() {
       querySnapshot.forEach((doc) => {
         foundCoupons.push({ id: doc.id, ...doc.data() } as Coupon);
       });
-      setCoupons(
-        foundCoupons.sort((a, b) =>
-          a.couponNumber.localeCompare(b.couponNumber)
-        )
+
+      // Sort all coupons by number initially
+      const sortedCoupons = foundCoupons.sort((a, b) =>
+        a.couponNumber.localeCompare(b.couponNumber)
       );
+
+      // Group coupons by purchaseNumber
+      const groups: GroupedCoupons = sortedCoupons.reduce((acc, coupon) => {
+        const key = coupon.purchaseNumber;
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(coupon);
+        return acc;
+      }, {} as GroupedCoupons);
+
+      setGroupedCoupons(groups);
+      setTotalCoupons(sortedCoupons.length);
+      if (sortedCoupons.length > 0) {
+        setFullName(sortedCoupons[0].fullName);
+      }
+
     } catch (e) {
       console.error(e);
       setError('Ocorreu um erro ao buscar seus cupons. Tente novamente.');
@@ -83,24 +210,7 @@ function MeusCuponsPage() {
     }
   };
   
-  const handleSaveCoupon = () => {
-    if (couponContainerRef.current && coupons.length > 0) {
-      html2canvas(couponContainerRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: null,
-      }).then((canvas) => {
-        const link = document.createElement('a');
-        const firstCoupon = coupons[0].couponNumber;
-        link.download = `meus-cupons-supermoda-${firstCoupon}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      });
-    }
-  };
-
-  const couponsCount = coupons.length;
-  const showCouponRange = couponsCount > 12;
+  const hasResults = Object.keys(groupedCoupons).length > 0;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -144,94 +254,16 @@ function MeusCuponsPage() {
               </div>
 
               {searched && !isLoading && (
-                <div className="mt-8 text-center animate-in fade-in-50 duration-500">
-                  {coupons.length > 0 ? (
-                     <div className="flex flex-col items-center gap-6">
-                        <div ref={couponContainerRef} className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border">
-                            {/* Header */}
-                            <div className="bg-primary p-4 text-center">
-                                <h2 className="text-2xl font-bold text-primary-foreground font-headline flex items-center justify-center gap-2">
-                                    🎟️ Sorteio Supermoda!
-                                </h2>
-                            </div>
-                            
-                            <div className="p-6 space-y-6">
-                                {/* Coupon Info */}
-                                <div className="text-center">
-                                    <p className="text-5xl font-black tracking-wider" style={{color: '#e30613'}}>{coupons[0].couponNumber}</p>
-                                    <p className="text-lg text-muted-foreground mt-1">{coupons[0].fullName}</p>
-                                </div>
-
-                                {/* Multiple coupons */}
-                                {coupons.length > 1 && (
-                                    <div className="text-center">
-                                        <p className="font-bold mb-2">Seus Cupons (Total: {couponsCount})</p>
-                                        {showCouponRange ? (
-                                             <div className="border rounded-md p-3 text-center bg-muted/50">
-                                                <p className="font-bold text-sm">
-                                                   🎟️ Você possui {couponsCount} cupons!
-                                                </p>
-                                                <p className="font-semibold text-sm text-primary">{coupons[0].couponNumber} a {coupons[couponsCount - 1].couponNumber}</p>
-                                                <CouponListModal coupons={coupons.map(c => c.couponNumber)} />
-                                            </div>
-                                        ) : (
-                                            <ScrollArea className="h-28 w-full rounded-md border p-4">
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                    {coupons.map(coupon => (
-                                                        <div key={coupon.id} className="border rounded-md p-2 text-center bg-muted/50">
-                                                            <p className="font-bold text-sm">🏷️ {coupon.couponNumber}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </ScrollArea>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                {/* Divider */}
-                                <div className="border-t-2 border-dashed w-full"></div>
-
-                                {/* Purchase Info */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm text-left">
-                                    <div className="flex items-center gap-2">
-                                        <DollarSign className="h-4 w-4 text-muted-foreground"/>
-                                        <div>
-                                            <p className="font-bold">Valor da Compra</p>
-                                            <p>R$ {coupons[0].purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                     <div className="flex items-center gap-2">
-                                        <ShoppingCart className="h-4 w-4 text-muted-foreground"/>
-                                        <div>
-                                            <p className="font-bold">Nº da Compra</p>
-                                            <p>{coupons[0].purchaseNumber ?? 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="h-4 w-4 text-muted-foreground"/>
-                                        <div>
-                                            <p className="font-bold">Data da Compra</p>
-                                            <p>{coupons[0].purchaseDate ? format(coupons[0].purchaseDate.toDate(), 'dd/MM/yyyy') : 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4 text-muted-foreground"/>
-                                        <div>
-                                            <p className="font-bold">Data do Cadastro</p>
-                                            <p>{coupons[0].registrationDate ? format(coupons[0].registrationDate.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                             {/* Footer */}
-                            <div className="bg-muted p-4 mt-4 text-center">
-                               <p className="text-sm font-bold text-muted-foreground">❤️ Supermoda!</p>
-                               <p className="text-xs text-muted-foreground">Boa sorte no sorteio!</p>
-                            </div>
-                        </div>
-                        <Button onClick={handleSaveCoupon} size="lg" className="bg-[#e30613] text-white hover:bg-[#f5b800] w-full max-w-md">
-                            <Download className="mr-2" /> Baixar Cupom
-                        </Button>
+                <div className="mt-8 animate-in fade-in-50 duration-500">
+                  {hasResults ? (
+                     <div className="space-y-10">
+                       <div className="text-center">
+                          <h2 className="text-xl font-bold">Olá, {fullName}!</h2>
+                          <p className="text-muted-foreground">Você tem um total de <span className="font-bold text-primary">{totalCoupons}</span> cupons de <span className="font-bold text-primary">{Object.keys(groupedCoupons).length}</span> compra(s) diferente(s).</p>
+                       </div>
+                       {Object.keys(groupedCoupons).map(purchaseNumber => (
+                          <CouponCard key={purchaseNumber} purchaseCoupons={groupedCoupons[purchaseNumber]} />
+                       ))}
                     </div>
                   ) : (
                     <p className="text-center text-muted-foreground">
