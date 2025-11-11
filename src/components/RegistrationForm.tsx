@@ -19,7 +19,7 @@ import {
   getDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useMemoFirebase } from '@/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import html2canvas from 'html2canvas';
@@ -447,16 +447,16 @@ export function RegistrationForm() {
 
         <div className="space-y-3">
           <Label>Qual é a loja que te deixa na moda e ainda te dá a chance de ganhar prêmios?</Label>
-          <RadioGroup name="quiz" required className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-2">
+          <RadioGroup name="quiz" required className="flex flex-col">
+            <div className="flex items-center space-x-1.5">
               <RadioGroupItem value="supermoda" id="r1" />
               <Label htmlFor="r1" className="font-normal">Claro que é a Supermoda!</Label>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5">
               <RadioGroupItem value="other-a" id="r2" />
               <Label htmlFor="r2" className="font-normal">Talvez outra loja...</Label>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5">
               <RadioGroupItem value="other-b" id="r3" />
               <Label htmlFor="r3" className="font-normal">Ainda estou descobrindo 😄</Label>
             </div>
