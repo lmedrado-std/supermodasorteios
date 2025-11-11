@@ -64,6 +64,7 @@ export default function LoginPage() {
                 title: 'Senha muito curta',
                 description: 'A senha para o novo admin deve ter no mínimo 6 caracteres.',
             });
+            setIsLoading(false);
             return;
           }
 
@@ -103,7 +104,7 @@ export default function LoginPage() {
         // 3. Se for outro erro (senha errada, etc.)
         let errorMessage = 'Ocorreu um erro desconhecido. Verifique sua conexão.';
         if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-            errorMessage = 'A senha está incorreta.';
+            errorMessage = 'A senha está incorreta. Se este for o primeiro acesso, tente uma senha com pelo menos 6 caracteres.';
         } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
         } else if (error.code === 'auth/network-request-failed') {
@@ -139,7 +140,7 @@ export default function LoginPage() {
                 Painel Administrativo
               </CardTitle>
               <CardDescription className="text-center pt-2">
-                Acesso restrito.
+                Acesso restrito. Na primeira vez, a senha digitada será salva.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -153,6 +154,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder='Use no mínimo 6 caracteres'
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
