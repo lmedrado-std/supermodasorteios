@@ -57,17 +57,17 @@ export default function LoginPage() {
     } catch (error: any) {
       if (error.code === 'auth/user-not-found') {
         // 2. Se o usuário não existe, cria o usuário e a role de admin
-        try {
-           if (password.length < 6) {
-             toast({
-                variant: 'destructive',
-                title: 'Senha muito curta',
-                description: 'A senha para o novo admin deve ter no mínimo 6 caracteres.',
-            });
-            setIsLoading(false);
-            return;
-          }
+        if (password.length < 6) {
+          toast({
+              variant: 'destructive',
+              title: 'Senha muito curta',
+              description: 'A senha para o novo admin deve ter no mínimo 6 caracteres.',
+          });
+          setIsLoading(false);
+          return;
+        }
 
+        try {
           const userCredential = await createUserWithEmailAndPassword(
             auth,
             adminEmail,
@@ -87,12 +87,11 @@ export default function LoginPage() {
             description: 'Sua conta de administrador foi criada com sucesso.',
           });
           // O login é feito automaticamente após a criação, o useEffect redirecionará
+
         } catch (creationError: any) {
            let creationErrorMessage = 'Não foi possível criar o usuário administrador.';
            if (creationError.code === 'auth/weak-password') {
              creationErrorMessage = 'A senha é muito fraca. Use pelo menos 6 caracteres.';
-           } else if (creationError.code === 'auth/email-already-in-use') {
-              creationErrorMessage = 'Este e-mail já está em uso por outro processo.';
            }
            toast({
             variant: 'destructive',
@@ -107,8 +106,6 @@ export default function LoginPage() {
             errorMessage = 'A senha está incorreta. Se este for o primeiro acesso, tente uma senha com pelo menos 6 caracteres.';
         } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
-        } else if (error.code === 'auth/network-request-failed') {
-            errorMessage = 'Erro de rede. Verifique sua conexão com a internet.';
         }
         toast({
           variant: 'destructive',
