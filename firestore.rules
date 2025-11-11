@@ -35,13 +35,18 @@ service cloud.firestore {
     
     /**
      * @description Secures admin role documents.
+     * - A user can read their own role document.
+     * - A user can create their own role document if it includes role: 'admin'.
+     * - Admins can list all roles.
+     * - Roles cannot be updated or deleted by clients.
      * @path /roles_admin/{adminUserId}
      */
     match /roles_admin/{adminUserId} {
-      allow get, list: if isAdmin();
-      // Allow any user to create their own role document initially.
-      // This is a common pattern for self-assigning roles, but should be managed carefully.
-      allow create: if request.auth.uid == adminUserId;
+      allow get: if isSignedIn() && request.auth.uid == adminUserId;
+      allow list: if isAdmin();
+      allow create: if isSignedIn() 
+                    && request.auth.uid == adminUserId
+                    && request.resource.data.role == 'admin';
       allow update, delete: if false; // Roles should not be updatable or deletable by clients.
     }
     

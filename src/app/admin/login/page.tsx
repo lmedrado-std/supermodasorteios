@@ -1,10 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth, useUser } from '@/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
 } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +29,7 @@ export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
@@ -39,7 +42,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) {
+    if (!auth || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Erro de Configuração',
@@ -47,44 +50,44 @@ export default function LoginPage() {
       });
       return;
     }
-    
+
     setIsLoggingIn(true);
     const email = 'pix@nasupermoda.com';
 
     try {
-      // Tenta fazer o login primeiro
       await signInWithEmailAndPassword(auth, email, password);
       // O useEffect cuidará do redirecionamento após a mudança de estado do usuário.
-
     } catch (error: any) {
-        // Se o usuário não existe E a senha digitada for 'supermoda', cria o usuário.
-        if (error.code === 'auth/user-not-found' && password === 'supermoda') {
-            try {
-                await createUserWithEmailAndPassword(auth, email, 'supermoda');
-                // O login é automático após a criação, e o useEffect fará o redirecionamento.
-            } catch (creationError: any) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Erro ao Criar Admin',
-                    description: `Não foi possível criar o usuário administrador: ${creationError.message}`,
-                });
-                setIsLoggingIn(false);
-            }
-        } else {
-            // Lida com outros erros de login (senha errada, etc.)
-            let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
-            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                description = 'Senha incorreta.';
-            } else if (error.code === 'auth/too-many-requests') {
-                description = 'Muitas tentativas de login falharam. Tente novamente mais tarde.';
-            }
-            toast({
-                variant: 'destructive',
-                title: 'Erro de Acesso',
-                description: description,
-            });
-            setIsLoggingIn(false); // Só reseta o loading em caso de erro
+      if (error.code === 'auth/user-not-found' && password === 'supermoda') {
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, 'supermoda');
+          const newUser = userCredential.user;
+          // Create the admin role document
+          const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
+          await setDoc(adminRoleRef, { role: 'admin' });
+          // O login é automático após a criação, e o useEffect fará o redirecionamento.
+        } catch (creationError: any) {
+          toast({
+            variant: 'destructive',
+            title: 'Erro ao Criar Admin',
+            description: `Não foi possível criar o usuário administrador: ${creationError.message}`,
+          });
+          setIsLoggingIn(false);
         }
+      } else {
+        let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+          description = 'Senha incorreta.';
+        } else if (error.code === 'auth/too-many-requests') {
+          description = 'Muitas tentativas de login falharam. Tente novamente mais tarde.';
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Erro de Acesso',
+          description: description,
+        });
+        setIsLoggingIn(false);
+      }
     }
   };
 
@@ -119,29 +122,35 @@ export default function LoginPage() {
                   <Label htmlFor="password">Senha</Label>
                   <div className="relative">
                     <Input
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder='Digite sua senha'
-                        autoFocus
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Digite sua senha"
+                      autoFocus
                     />
                     <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute inset-y-0 right-0 h-full px-3"
-                        onClick={() => setShowPassword(!showPassword)}
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute inset-y-0 right-0 h-full px-3"
+                      onClick={() => setShowPassword(!showPassword)}
                     >
-                        {showPassword ? <EyeOff /> : <Eye />}
-                         <span className="sr-only">{showPassword ? 'Ocultar' : 'Mostrar'} senha</span>
+                      {showPassword ? <EyeOff /> : <Eye />}
+                      <span className="sr-only">
+                        {showPassword ? 'Ocultar' : 'Mostrar'} senha
+                      </span>
                     </Button>
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoggingIn}>
-                  {isLoggingIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
+                  {isLoggingIn ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <LogIn className="mr-2 h-4 w-4" />
+                  )}
                   {isLoggingIn ? 'Entrando...' : 'Entrar'}
                 </Button>
               </form>
