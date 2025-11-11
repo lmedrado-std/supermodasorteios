@@ -15,6 +15,7 @@ import {
   runTransaction,
   doc,
   serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -24,11 +25,11 @@ import { Logo } from './Logo';
 
 const initialState: {
   message: string | null;
-  coupon?: string | null;
+  coupons?: string[];
   fullName?: string | null;
 } = {
   message: null,
-  coupon: null,
+  coupons: [],
   fullName: null,
 };
 
@@ -61,7 +62,7 @@ function SubmitButton() {
 
   return (
     <Button type="submit" className="w-full text-lg py-6" disabled={pending}>
-      {pending ? 'Gerando...' : 'Gerar Cupom'}
+      {pending ? 'Gerando...' : 'Gerar Cupom(ns)'}
       <Ticket className="ml-2 h-5 w-5" />
     </Button>
   );
@@ -72,18 +73,18 @@ export function RegistrationForm() {
   const [state, setState] = useState(initialState);
   const [showSuccess, setShowSuccess] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const couponRef = useRef<HTMLDivElement>(null);
+  const couponContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (state.coupon) {
+    if (state.coupons && state.coupons.length > 0) {
       // Success
       setShowSuccess(true);
       formRef.current?.reset();
       const timer = setTimeout(() => {
         setShowSuccess(false);
         setState(initialState); // Reset state
-      }, 20000); // Increased time to allow saving
+      }, 30000); // Increased time to allow saving
       return () => clearTimeout(timer);
     } else if (state.message) {
       // Error from server (e.g., duplicate, db error)
@@ -97,13 +98,14 @@ export function RegistrationForm() {
   }, [state, toast]);
 
   const handleSaveCoupon = () => {
-    if (couponRef.current) {
-      html2canvas(couponRef.current, {
+    if (couponContainerRef.current) {
+      html2canvas(couponContainerRef.current, {
         backgroundColor: null, // Use element's background
         scale: 2, // Increase resolution
       }).then((canvas) => {
         const link = document.createElement('a');
-        link.download = `cupom-supermoda-${state.coupon}.png`;
+        const firstCoupon = state.coupons ? state.coupons[0] : 'cupom';
+        link.download = `cupons-supermoda-${firstCoupon}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
       });
@@ -120,14 +122,21 @@ export function RegistrationForm() {
     const nome = formData.get('nome') as string;
     const cpf = (formData.get('cpf') as string).replace(/\D/g, '');
     const numeroCompra = formData.get('numeroCompra') as string;
+    const valorCompraStr = (formData.get('valorCompra') as string).replace(',', '.');
+    const valorCompra = parseFloat(valorCompraStr);
 
-    if (!nome || !cpf || !numeroCompra) {
+
+    if (!nome || !cpf || !numeroCompra || !valorCompraStr) {
       setState({ message: 'Preencha todos os campos.' });
       return;
     }
     if (cpf.length !== 11) {
       setState({ message: 'CPF deve ter 11 dígitos.' });
       return;
+    }
+    if (isNaN(valorCompra) || valorCompra <= 0) {
+        setState({ message: 'Valor da compra inválido.' });
+        return;
     }
 
     // Check for duplicates first
@@ -146,47 +155,67 @@ export function RegistrationForm() {
       return;
     }
     
+    // Logic to determine number of coupons
+    const couponsToGenerate = Math.floor(valorCompra / 200);
+
+    if (couponsToGenerate < 1) {
+        setState({ message: 'O valor da compra deve ser de no mínimo R$ 200,00 para gerar um cupom.' });
+        return;
+    }
+
     const counterRef = doc(firestore, 'counters', 'coupons');
 
     runTransaction(firestore, async (transaction) => {
-      const counterDoc = await transaction.get(counterRef);
-      let nextNumber = 1;
-      if (counterDoc.exists()) {
-        nextNumber = (counterDoc.data().lastNumber || 0) + 1;
-      }
-      
-      const couponNumber = `SM-${String(nextNumber).padStart(5, '0')}`;
-      const couponRef = doc(collection(firestore, 'coupons'));
-      
-      const couponData = {
-        id: couponRef.id,
-        fullName: nome,
-        cpf,
-        purchaseNumber: numeroCompra,
-        couponNumber: couponNumber,
-        registrationDate: serverTimestamp(),
-      };
-      
-      // Perform transaction writes
-      transaction.set(counterRef, { lastNumber: nextNumber }, { merge: true });
-      transaction.set(couponRef, couponData);
+        const counterDoc = await transaction.get(counterRef);
+        let currentNumber = 0;
+        if (counterDoc.exists()) {
+            currentNumber = counterDoc.data().lastNumber || 0;
+        } else {
+            // Initialize counter if it doesn't exist
+            transaction.set(counterRef, { lastNumber: 0 });
+        }
+        
+        const newCoupons: string[] = [];
+        const batch = writeBatch(firestore);
 
-      return couponNumber;
-    }).then((newCouponNumberStr) => {
+        for (let i = 0; i < couponsToGenerate; i++) {
+            const nextNumber = currentNumber + i + 1;
+            const couponNumber = `SM-${String(nextNumber).padStart(5, '0')}`;
+            newCoupons.push(couponNumber);
+
+            const couponRef = doc(collection(firestore, 'coupons'));
+            const couponData = {
+                id: couponRef.id,
+                fullName: nome,
+                cpf,
+                purchaseNumber: numeroCompra,
+                purchaseValue: valorCompra,
+                couponNumber: couponNumber,
+                registrationDate: serverTimestamp(),
+            };
+            batch.set(couponRef, couponData);
+        }
+
+        // Update the counter in the transaction
+        const finalCounterNumber = currentNumber + couponsToGenerate;
+        transaction.set(counterRef, { lastNumber: finalCounterNumber }, { merge: true });
+
+        // The batch commit must be outside the transaction to avoid issues
+        await batch.commit();
+
+        return newCoupons; // Return the generated coupon numbers
+    }).then((generatedCoupons) => {
       setState({
         message: 'Cadastro realizado com sucesso!',
-        coupon: newCouponNumberStr,
+        coupons: generatedCoupons,
         fullName: nome,
       });
     }).catch((error: any) => {
-      // This is our new, detailed error handling.
       if (error.name === 'FirebaseError' && (error.code === 'permission-denied' || error.code === 'unauthenticated')) {
-        // We can guess the operation was a write.
-        // The exact failing doc isn't known without parsing the error, but we know the collections.
         const permissionError = new FirestorePermissionError({
-          path: 'coupons/{couponId} OR counters/coupons', // Path that likely failed
+          path: 'coupons/{couponId} OR counters/coupons',
           operation: 'write',
-          requestResourceData: { fullName: nome, cpf, purchaseNumber: numeroCompra },
+          requestResourceData: { fullName: nome, cpf, purchaseNumber: numeroCompra, purchaseValue: valorCompra },
         });
         errorEmitter.emit('permission-error', permissionError);
       } else {
@@ -228,11 +257,15 @@ export function RegistrationForm() {
             <Label htmlFor="numeroCompra">Número da Compra</Label>
             <Input id="numeroCompra" name="numeroCompra" placeholder="Ex: 123456" required />
           </div>
+          <div>
+            <Label htmlFor="valorCompra">Valor da Compra (R$)</Label>
+            <Input id="valorCompra" name="valorCompra" placeholder="Ex: 250,50" required inputMode="decimal" />
+          </div>
           <SubmitButton />
         </form>
       )}
 
-      {showSuccess && state.coupon && (
+      {showSuccess && state.coupons && state.coupons.length > 0 && (
         <div className="text-center">
             <Alert
               variant="default"
@@ -241,18 +274,22 @@ export function RegistrationForm() {
               <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertTitle>Sucesso!</AlertTitle>
               <AlertDescription>
-                Seu cupom foi gerado! Salve a imagem abaixo.
+                Seus cupons foram gerados! Salve a imagem abaixo.
               </AlertDescription>
             </Alert>
 
-            <div ref={couponRef} className="bg-card p-6 rounded-lg border-2 border-dashed border-primary/50 shadow-lg inline-block">
+            <div ref={couponContainerRef} className="bg-card p-6 rounded-lg border-2 border-dashed border-primary/50 shadow-lg inline-block w-full max-w-md">
                 <div className="text-center space-y-4">
                     <Logo className="h-10 w-auto mx-auto"/>
-                    <p className="text-muted-foreground">Parabéns pelo seu cupom!</p>
+                    <p className="text-muted-foreground">Parabéns pelos seus cupons!</p>
                     <p className="text-lg font-bold">{state.fullName}</p>
-                    <div className="bg-primary text-primary-foreground rounded-md px-6 py-3">
-                        <p className="text-sm">Seu Número da Sorte é:</p>
-                        <p className="text-3xl font-bold tracking-wider">{state.coupon}</p>
+                    <div className="bg-primary text-primary-foreground rounded-md px-6 py-3 space-y-2">
+                        <p className="text-sm">Seus Números da Sorte são:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {state.coupons.map(coupon => (
+                            <p key={coupon} className="text-xl font-bold tracking-wider">{coupon}</p>
+                          ))}
+                        </div>
                     </div>
                     <p className="text-xs text-muted-foreground pt-2">Boa Sorte!</p>
                 </div>

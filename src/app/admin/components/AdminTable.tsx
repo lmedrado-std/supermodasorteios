@@ -23,6 +23,7 @@ type Coupon = {
   fullName: string;
   cpf: string;
   purchaseNumber: string;
+  purchaseValue: number;
   couponNumber: string;
   registrationDate: {
     seconds: number;
@@ -60,6 +61,7 @@ export function AdminTable() {
                 <TableHead className="font-bold">Nome</TableHead>
                 <TableHead className="font-bold">CPF</TableHead>
                 <TableHead className="font-bold">Nº da Compra</TableHead>
+                <TableHead className="font-bold text-right">Valor (R$)</TableHead>
                 <TableHead className="text-right font-bold">
                   Data de Cadastro
                 </TableHead>
@@ -69,7 +71,7 @@ export function AdminTable() {
               {isLoading && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="text-center h-24 text-muted-foreground"
                   >
                     Carregando cupons...
@@ -90,6 +92,9 @@ export function AdminTable() {
                       )}
                     </TableCell>
                     <TableCell>{coupon.purchaseNumber}</TableCell>
+                     <TableCell className="text-right">
+                      {coupon.purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}
+                    </TableCell>
                     <TableCell className="text-right">
                       {coupon.registrationDate
                         ? format(
@@ -104,7 +109,7 @@ export function AdminTable() {
                 !isLoading && (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="text-center h-24 text-muted-foreground"
                     >
                       Nenhum cupom gerado ainda.

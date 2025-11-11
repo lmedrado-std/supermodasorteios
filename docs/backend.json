@@ -22,6 +22,10 @@
           "type": "string",
           "description": "Purchase number associated with the coupon."
         },
+        "purchaseValue": {
+          "type": "number",
+          "description": "The value of the purchase."
+        },
         "couponNumber": {
           "type": "string",
           "description": "Unique coupon number (e.g., SM-00001)."
@@ -37,12 +41,13 @@
         "fullName",
         "cpf",
         "purchaseNumber",
+        "purchaseValue",
         "couponNumber",
         "registrationDate"
       ]
     },
     "AdminUser": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$schema": "http://json-schema.org/draft_07/schema#",
       "title": "AdminUser",
       "type": "object",
       "description": "Represents an administrator user for the admin panel.",
