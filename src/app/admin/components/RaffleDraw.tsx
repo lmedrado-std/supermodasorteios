@@ -34,6 +34,7 @@ type Coupon = {
   couponNumber: string;
   purchaseValue: number;
   purchaseDate: Timestamp;
+  purchaseNumber: string;
 };
 
 
@@ -81,7 +82,6 @@ export function RaffleDraw() {
 
     const startTime = Date.now();
     const totalDuration = 15000;
-    const slowdownStart = 12000;
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
@@ -221,6 +221,14 @@ export function RaffleDraw() {
                 <div className="text-left">
                   <p className="text-xs text-muted-foreground">Nome</p>
                   <p className="font-bold text-gray-900">{winnerInfo.fullName}</p>
+                </div>
+              </div>
+
+               <div className="flex items-center gap-3 bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg hover:shadow-md transition">
+                <ShoppingCart className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                <div className="text-left">
+                  <p className="text-xs text-muted-foreground">Nº da Compra</p>
+                  <p className="font-bold text-gray-900">{winnerInfo.purchaseNumber}</p>
                 </div>
               </div>
 
