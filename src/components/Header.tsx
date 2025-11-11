@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { Logo } from './Logo';
-import { Settings } from 'lucide-react';
+import { Settings, BookOpen } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -11,7 +11,7 @@ import {
 
 export function Header() {
   return (
-    <header className="bg-card shadow-sm">
+    <header className="bg-card shadow-sm sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between p-4">
          <Link href="/">
           <Logo className="h-10 md:h-12 w-auto" />
@@ -23,6 +23,9 @@ export function Header() {
           </Link>
           <Link href="/meus-cupons" className="hover:text-primary hover:underline px-2">
             Cupons
+          </Link>
+           <Link href="/regulamento" className="hover:text-primary hover:underline px-2 flex items-center gap-1">
+            Regulamento
           </Link>
           <TooltipProvider>
             <Tooltip>

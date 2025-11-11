@@ -62,7 +62,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <header className="bg-background shadow-sm sticky top-0 z-10">
+      <header className="bg-background shadow-sm sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between p-4">
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -78,6 +78,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               </Link>
               <Link href="/meus-cupons" className="hover:text-primary hover:underline px-2">
                 Cupons
+              </Link>
+               <Link href="/regulamento" className="hover:text-primary hover:underline px-2">
+                Regulamento
               </Link>
           </nav>
           <AdminMenu user={user} auth={auth} onLogout={handleLogout} />
