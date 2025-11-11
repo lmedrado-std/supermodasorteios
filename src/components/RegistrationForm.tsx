@@ -174,14 +174,13 @@ export function RegistrationForm() {
 
     const q = query(
       collection(firestore, 'coupons'),
-      where('cpf', '==', cpf),
       where('purchaseNumber', '==', numeroCompra)
     );
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
       setState({
-        message: 'Já existe um cupom cadastrado para este CPF e número de compra.',
+        message: 'Este número de compra já foi utilizado para gerar cupons.',
       });
       return;
     }
@@ -283,6 +282,11 @@ export function RegistrationForm() {
                     <div className="absolute top-28 -right-3 w-6 h-6 bg-red-600 rounded-full"></div>
                     
                     <h2 className="text-2xl font-bold text-red-600 font-headline">Sorteio Supermoda</h2>
+                    {state.coupons && state.coupons.length > 0 && (
+                        <div className="bg-amber-100 border-2 border-dashed border-amber-400 rounded-lg py-1 px-3 inline-block">
+                           <p className="text-sm font-bold text-amber-800">Você gerou <span className="text-base">{state.coupons.length}</span> cupom(ns) nesta compra!</p>
+                        </div>
+                    )}
                     <div className="border-t-2 border-dashed border-gray-300 w-full my-4 pt-4 flex justify-between items-center">
                         <div>
                             <p className="text-3xl md:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-amber-500" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.2)'}}>{state.coupons?.[0]}</p>
@@ -348,7 +352,7 @@ export function RegistrationForm() {
             name="cpf"
             placeholder="Apenas números"
             required
-            maxLength={14}
+            maxLength={11}
           />
         </div>
         <div>
@@ -371,3 +375,5 @@ export function RegistrationForm() {
     </div>
   );
 }
+
+    

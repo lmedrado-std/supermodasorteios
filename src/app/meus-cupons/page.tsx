@@ -123,7 +123,7 @@ function MeusCuponsPage() {
                     placeholder="Apenas números"
                     value={cpf}
                     onChange={(e) => setCpf(e.target.value)}
-                    maxLength={14}
+                    maxLength={11}
                   />
                 </div>
                 <Button
@@ -151,6 +151,9 @@ function MeusCuponsPage() {
                                 <div className="absolute top-28 -right-3 w-6 h-6 bg-red-600 rounded-full"></div>
                                 
                                 <h2 className="text-2xl font-bold text-red-600 font-headline">Sorteio Supermoda</h2>
+                                 <div className="bg-amber-100 border-2 border-dashed border-amber-400 rounded-lg py-1 px-3 inline-block">
+                                   <p className="text-sm font-bold text-amber-800">Você tem <span className="text-base">{coupons.length}</span> cupom(ns) no total!</p>
+                                </div>
                                 <div className="border-t-2 border-dashed border-gray-300 w-full my-4 pt-4 flex justify-between items-center">
                                     <div>
                                         <p className="text-3xl md:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-amber-500" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.2)'}}>{coupons[0].couponNumber}</p>
@@ -211,3 +214,5 @@ export default function MeusCuponsPageWrapper() {
         </FirebaseClientProvider>
     )
 }
+
+    
