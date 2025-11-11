@@ -23,9 +23,9 @@ import { useFirestore } from '@/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import html2canvas from 'html2canvas';
-import { CouponLogo } from './CouponLogo';
 import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from './ui/scroll-area';
 
 const initialState: {
   message: string | null;
@@ -326,16 +326,18 @@ export function RegistrationForm() {
 
                     {/* Multiple coupons */}
                     {state.coupons && state.coupons.length > 1 && (
-                      <div className="text-center">
-                          <p className="font-bold mb-2">Seus Cupons:</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {state.coupons.map(coupon => (
-                               <div key={coupon} className="border rounded-md p-2 text-center bg-muted/50">
-                                  <p className="font-bold text-sm">🏷️ {coupon}</p>
-                               </div>
-                            ))}
-                          </div>
-                      </div>
+                        <div className="text-center">
+                            <p className="font-bold mb-2">Seus Cupons (Total: {state.coupons.length})</p>
+                            <ScrollArea className="h-28 w-full rounded-md border p-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {state.coupons.slice(0, 12).map(coupon => (
+                                        <div key={coupon} className="border rounded-md p-2 text-center bg-muted/50">
+                                            <p className="font-bold text-sm">🏷️ {coupon}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </div>
                     )}
                     
                     {/* Divider */}
