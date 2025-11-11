@@ -33,6 +33,7 @@ const initialState: {
   purchaseValue?: number | null;
   purchaseNumber?: string | null;
   registrationDate?: Date | null;
+  purchaseDate?: Date | null;
 } = {
   message: null,
   coupons: [],
@@ -40,6 +41,7 @@ const initialState: {
   purchaseValue: null,
   purchaseNumber: null,
   registrationDate: null,
+  purchaseDate: null,
 };
 
 type RaffleSettings = {
@@ -265,6 +267,7 @@ export function RegistrationForm() {
         purchaseValue: valorCompra,
         purchaseNumber: numeroCompra,
         registrationDate: registrationDate,
+        purchaseDate: dataCompra,
       });
     }).catch((error: any) => {
       console.error("Transaction failed: ", error);
@@ -331,7 +334,8 @@ export function RegistrationForm() {
                     </div>
 
                     <div className="text-left text-xs text-gray-600 space-y-1 pt-4 border-t border-dashed">
-                      <p><span className="font-bold">Data Cadastro:</span> {state.registrationDate ? format(state.registrationDate, 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
+                       <p><span className="font-bold">Data Cadastro:</span> {state.registrationDate ? format(state.registrationDate, 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
+                      <p><span className="font-bold">Data Compra:</span> {state.purchaseDate ? format(state.purchaseDate, 'dd/MM/yyyy') : 'N/A'}</p>
                       <p><span className="font-bold">Valor Compra:</span> R$ {state.purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}</p>
                       <p><span className="font-bold">Nº Compra:</span> {state.purchaseNumber ?? 'N/A'}</p>
                     </div>

@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const SETTINGS_DOC_PATH = 'settings/raffle';
@@ -52,7 +52,7 @@ export function SettingsManager() {
   useEffect(() => {
     if (settings) {
       if (typeof settings.valuePerCoupon === 'number') {
-        setValuePerCoupon(String(settings.valuePerCoupon));
+        setValuePerCoupon(String(settings.valuePerCoupon).replace('.', ','));
       }
       if (settings.campaignStartDate) {
         setStartDate(settings.campaignStartDate.toDate());
@@ -66,7 +66,7 @@ export function SettingsManager() {
   const handleSave = async () => {
     if (!settingsDocRef) return;
 
-    const numericValue = parseFloat(valuePerCoupon);
+    const numericValue = parseFloat(valuePerCoupon.replace(',', '.'));
 
     if (isNaN(numericValue) || numericValue <= 0) {
       toast({
@@ -166,10 +166,11 @@ export function SettingsManager() {
               <Label htmlFor="value-per-coupon">Valor por Cupom (R$)</Label>
               <Input
                 id="value-per-coupon"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={valuePerCoupon}
                 onChange={(e) => setValuePerCoupon(e.target.value)}
-                placeholder="Ex: 200"
+                placeholder="Ex: 200,00"
               />
               <p className="text-xs text-muted-foreground">
                 A cada X reais em compras, o cliente ganha 1 cupom.
@@ -191,3 +192,5 @@ export function SettingsManager() {
     </Card>
   );
 }
+
+    
