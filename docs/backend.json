@@ -1,0 +1,108 @@
+{
+  "entities": {
+    "Coupon": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Coupon",
+      "type": "object",
+      "description": "Represents a raffle coupon for Supermoda Raffles.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the coupon."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name of the customer."
+        },
+        "cpf": {
+          "type": "string",
+          "description": "CPF (Brazilian national ID) of the customer. Must have 11 digits."
+        },
+        "purchaseNumber": {
+          "type": "string",
+          "description": "Purchase number associated with the coupon."
+        },
+        "couponNumber": {
+          "type": "string",
+          "description": "Unique coupon number (e.g., SM-00001)."
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "Timestamp of when the coupon was registered.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "fullName",
+        "cpf",
+        "purchaseNumber",
+        "couponNumber",
+        "registrationDate"
+      ]
+    },
+    "AdminUser": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminUser",
+      "type": "object",
+      "description": "Represents an administrator user for the admin panel.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin user."
+        },
+        "username": {
+          "type": "string",
+          "description": "Username for the admin user."
+        }
+      },
+      "required": [
+        "id",
+        "username"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/coupons/{couponId}",
+        "definition": {
+          "entityName": "Coupon",
+          "schema": {
+            "$ref": "#/backend/entities/Coupon"
+          },
+          "description": "Stores raffle coupon data. The '{couponId}' is the unique coupon identifier.",
+          "params": [
+            {
+              "name": "couponId",
+              "description": "Unique identifier for the coupon document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{adminUserId}",
+        "definition": {
+          "entityName": "AdminUser",
+          "schema": {
+            "$ref": "#/backend/entities/AdminUser"
+          },
+          "description": "Documents in this collection grant admin access. Existence of a document for a given UID grants admin privileges.",
+          "params": [
+            {
+              "name": "adminUserId",
+              "description": "The Firebase Auth UID of the admin user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This design prioritizes security and scalability for the Supermoda Raffles application by adhering to the core design principles. It uses Structural Segregation by storing coupons and admin user data in separate collections. The design achieves Authorization Independence by using a dedicated collection for admin users to enable role-based access control without relying on hierarchical `get()` calls in the security rules. This approach also supports QAPs. Admin user's role is checked against the dedicated `/roles_admin/{uid}` collection, securing the admin panel."
+  }
+}
