@@ -23,7 +23,6 @@ import { Label } from '@/components/ui/label';
 import { Search, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { CouponLogo } from '@/components/CouponLogo';
-import { QRCodePlaceholder } from '@/components/QRCodePlaceholder';
 import { format } from 'date-fns';
 
 
@@ -170,7 +169,6 @@ function MeusCuponsPage() {
 
                                 <div className="pt-4 flex flex-col items-center justify-center gap-4">
                                     <CouponLogo className="w-40 h-auto" />
-                                    <QRCodePlaceholder className="w-28 h-28" />
                                 </div>
 
                                 <div className="text-left text-xs text-gray-600 space-y-1 pt-4 border-t border-dashed">

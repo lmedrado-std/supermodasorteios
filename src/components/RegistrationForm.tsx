@@ -24,7 +24,6 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import html2canvas from 'html2canvas';
 import { CouponLogo } from './CouponLogo';
-import { QRCodePlaceholder } from './QRCodePlaceholder';
 import { format } from 'date-fns';
 
 
@@ -301,7 +300,6 @@ export function RegistrationForm() {
 
                     <div className="pt-4 flex flex-col items-center justify-center gap-4">
                         <CouponLogo className="w-40 h-auto" />
-                        <QRCodePlaceholder className="w-28 h-28" />
                     </div>
 
                     <div className="text-left text-xs text-gray-600 space-y-1 pt-4 border-t border-dashed">
