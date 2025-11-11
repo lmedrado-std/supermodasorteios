@@ -1,8 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth, useFirebase, useUser } from '@/firebase';
-import { signInAnonymously } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,27 +19,23 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('admin@supermoda.com');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { auth, firestore } = useFirebase();
+  const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
-  
-  // A senha estática para o painel administrativo.
-  // No futuro, isso pode ser movido para uma variável de ambiente.
-  const ADMIN_SECRET = 'supermoda';
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      // Se o usuário já está logado (anonimamente ou não), redireciona para o painel.
       router.push('/admin');
     }
   }, [user, isUserLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !firestore) {
+    if (!auth) {
       toast({
         variant: 'destructive',
         title: 'Erro de Configuração',
@@ -51,38 +46,20 @@ export default function LoginPage() {
     
     setIsLoading(true);
 
-    // 1. Verifica se a senha digitada corresponde à senha secreta.
-    if (password !== ADMIN_SECRET) {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // O useEffect cuidará do redirecionamento para /admin.
+    } catch (error: any) {
+      let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        description = 'Email ou senha incorretos.';
+      } else if (error.code === 'auth/too-many-requests') {
+        description = 'Muitas tentativas. Tente novamente mais tarde.';
+      }
       toast({
         variant: 'destructive',
         title: 'Erro de Acesso',
-        description: 'A senha está incorreta.',
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      // 2. Faz o login como um usuário anônimo.
-      const userCredential = await signInAnonymously(auth);
-      const anonymousUser = userCredential.user;
-
-      // 3. Concede a role de administrador para este usuário anônimo.
-      // O documento será criado se não existir, garantindo a permissão.
-      const adminRoleRef = doc(firestore, 'roles_admin', anonymousUser.uid);
-      await setDoc(adminRoleRef, {
-        id: anonymousUser.uid,
-        username: 'supermoda_admin_anon',
-      });
-      
-      // O useEffect cuidará do redirecionamento para /admin.
-
-    } catch (error: any) {
-      console.error("Erro no login anônimo:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro de Autenticação',
-        description: 'Não foi possível fazer o login anônimo. Verifique o console para mais detalhes.',
+        description: description,
       });
     } finally {
       setIsLoading(false);
@@ -109,13 +86,27 @@ export default function LoginPage() {
                 Painel Administrativo
               </CardTitle>
               <CardDescription className="text-center pt-2">
-                Acesso restrito via senha de segurança.
+                Acesso restrito para administradores.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <Label htmlFor="password">Senha de Acesso</Label>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder='admin@supermoda.com'
+                    readOnly
+                    className="bg-muted"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Senha</Label>
                   <Input
                     id="password"
                     name="password"
@@ -123,7 +114,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder='Digite a senha de segurança'
+                    placeholder='Digite sua senha'
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
