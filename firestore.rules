@@ -27,13 +27,25 @@ service cloud.firestore {
      * @description Grants public read access to coupons and restricts write access to admins.
      * @path /coupons/{couponId}
      * @allow (get, list): Any user can read coupon data.
-     * @allow (create, update, delete): Only admin users can create, update, or delete coupons.
-     * @deny (create, update, delete): Non-admin users cannot modify coupon data.
+     * @allow (create): Any user can create a coupon.
+     * @allow (update, delete): Only admin users can create, update, or delete coupons.
+     * @deny (update, delete): Non-admin users cannot modify coupon data.
      * @principle Allows public reads and admin-only writes.
      */
     match /coupons/{couponId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+    
+    /**
+     * @description Allows any user to write to the counters collection. This is necessary for the public registration form to increment the coupon counter.
+     * @path /counters/{counterId}
+     * @allow (read, write): Any user can read or write to the counters.
+     * @principle Enables public write access for coupon generation.
+     */
+    match /counters/{counterId} {
+        allow read, write: if true;
     }
 
     /**
