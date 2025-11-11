@@ -4,13 +4,18 @@ import { Logo } from './Logo';
 export function Header() {
   return (
     <header className="bg-card shadow-sm">
-      <div className="container mx-auto flex items-center justify-between p-4">
+      <div className="container mx-auto flex flex-col items-center justify-center p-4 text-center">
         <Link href="/">
-          <Logo className="h-8 md:h-10 w-auto" />
+          <Logo className="h-10 md:h-12 w-auto" />
         </Link>
-        <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline">
+        <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline mt-2">
           Supermoda Sorteios
         </h1>
+        <nav className="mt-4 flex gap-4 text-sm md:text-base text-muted-foreground">
+            <Link href="/" className="hover:text-primary hover:underline">Início</Link>
+            <Link href="/meus-cupons" className="hover:text-primary hover:underline">Meus Cupons</Link>
+            <Link href="/admin/login" className="hover:text-primary hover:underline">Admin</Link>
+        </nav>
       </div>
     </header>
   );

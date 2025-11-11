@@ -20,6 +20,8 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 import { useRouter } from 'next/navigation';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -77,43 +79,42 @@ export default function LoginPage() {
 
 
   return (
-    <main className="flex items-center justify-center min-h-screen bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="flex justify-center mb-6">
-          <Link href="/" className="inline-block" aria-label="Voltar para a página inicial">
-            <Logo />
-          </Link>
+    <div className="flex flex-col min-h-screen bg-background">
+      <Header />
+      <main className="flex-grow flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold text-center">
+                Painel Administrativo
+              </CardTitle>
+              <CardDescription className="text-center pt-2">
+                Acesso restrito.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <Label htmlFor="password">Senha</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Entrando...' : 'Entrar'}
+                  <LogIn className="ml-2 h-4 w-4" />
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">
-              Painel Administrativo
-            </CardTitle>
-            <CardDescription className="text-center pt-2">
-              Acesso restrito.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Entrando...' : 'Entrar'}
-                <LogIn className="ml-2 h-4 w-4" />
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }
