@@ -48,7 +48,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
         if (abortController.signal.aborted) return;
 
-        if (adminDoc.exists()) {
+        if (adminDoc.exists() && adminDoc.data()?.role === 'admin') {
           setAuthStatus('admin');
           if (isLoginPage) {
             router.push('/admin');
