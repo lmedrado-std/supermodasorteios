@@ -1,11 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
-import { useFormStatus } from 'react-dom';
-import {
-  addDocumentNonBlocking,
-  useFirestore,
-} from '@/firebase';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,20 +15,47 @@ import {
   runTransaction,
   doc,
   serverTimestamp,
+  Firestore,
 } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const initialState: {
   message: string | null;
-  errors?: any;
   coupon?: string | null;
 } = {
   message: null,
-  errors: {},
   coupon: null,
 };
 
 function SubmitButton() {
-  const { pending } = useFormStatus();
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    // A simple way to manage form pending state without useFormStatus
+    const form = document.querySelector('form');
+    if (!form) return;
+
+    const handleSubmit = () => {
+      setPending(true);
+    };
+
+    const handleReset = () => {
+      setPending(false);
+    };
+    
+    // This is a simplification; a real app might need a more robust state management
+    form.addEventListener('submit', handleSubmit);
+    // Assuming form is reset on success/error which stops pending
+    // We don't have a direct 'end' event, so this is an approximation.
+    
+    return () => {
+      form.removeEventListener('submit', handleSubmit);
+    };
+  }, []);
+
+
   return (
     <Button type="submit" className="w-full text-lg py-6" disabled={pending}>
       {pending ? 'Gerando...' : 'Gerar Cupom'}
@@ -56,102 +78,119 @@ export function RegistrationForm() {
       formRef.current?.reset();
       const timer = setTimeout(() => {
         setShowSuccess(false);
+        setState(initialState); // Reset state
       }, 10000);
       return () => clearTimeout(timer);
-    } else if (state.message && !state.errors) {
+    } else if (state.message) {
       // Error from server (e.g., duplicate, db error)
       toast({
         variant: 'destructive',
         title: 'Erro no Cadastro',
         description: state.message,
       });
+      setState(initialState); // Reset state after showing toast
     }
   }, [state, toast]);
 
   const generateCouponAction = async (formData: FormData) => {
+    if (!firestore) {
+      setState({ message: 'Serviço de banco de dados não disponível.' });
+      return;
+    }
+
     const nome = formData.get('nome') as string;
-    const cpf = formData.get('cpf') as string;
+    const cpf = (formData.get('cpf') as string).replace(/\D/g, '');
     const numeroCompra = formData.get('numeroCompra') as string;
 
     if (!nome || !cpf || !numeroCompra) {
-      return setState({ message: 'Preencha todos os campos.' });
+      setState({ message: 'Preencha todos os campos.' });
+      return;
     }
-    if (cpf.length !== 11 || !/^\d+$/.test(cpf)) {
-      return setState({ message: 'CPF deve ter 11 dígitos e conter apenas números.' });
+    if (cpf.length !== 11) {
+      setState({ message: 'CPF deve ter 11 dígitos.' });
+      return;
     }
 
-    try {
-      const q = query(
-        collection(firestore, 'coupons'),
-        where('cpf', '==', cpf),
-        where('purchaseNumber', '==', numeroCompra)
-      );
-      const querySnapshot = await getDocs(q);
+    // Check for duplicates first
+    const q = query(
+      collection(firestore, 'coupons'),
+      where('cpf', '==', cpf),
+      where('purchaseNumber', '==', numeroCompra)
+    );
 
-      if (!querySnapshot.empty) {
-        return setState({
-          message:
-            'Já existe um cupom cadastrado para este CPF e número de compra.',
-        });
-      }
+    const querySnapshot = await getDocs(q);
 
-      const counterRef = doc(firestore, 'counters', 'coupons');
-
-      const newCouponNumberStr = await runTransaction(firestore, async (transaction) => {
-        const counterDoc = await transaction.get(counterRef);
-        let nextNumber = 1;
-        if (counterDoc.exists()) {
-          nextNumber = (counterDoc.data().lastNumber || 0) + 1;
-        }
-        transaction.set(counterRef, { lastNumber: nextNumber }, { merge: true });
-        
-        const couponNumber = `SM-${String(nextNumber).padStart(5, '0')}`;
-        
-        const couponRef = doc(collection(firestore, "coupons"));
-        
-        transaction.set(couponRef, {
-            id: couponRef.id,
-            fullName: nome,
-            cpf,
-            purchaseNumber: numeroCompra,
-            couponNumber: couponNumber,
-            registrationDate: serverTimestamp(),
-        });
-
-        return couponNumber;
+    if (!querySnapshot.empty) {
+      setState({
+        message: 'Já existe um cupom cadastrado para este CPF e número de compra.',
       });
+      return;
+    }
+    
+    const counterRef = doc(firestore, 'counters', 'coupons');
 
+    runTransaction(firestore, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+      let nextNumber = 1;
+      if (counterDoc.exists()) {
+        nextNumber = (counterDoc.data().lastNumber || 0) + 1;
+      }
+      
+      const couponNumber = `SM-${String(nextNumber).padStart(5, '0')}`;
+      const couponRef = doc(collection(firestore, 'coupons'));
+      
+      const couponData = {
+        id: couponRef.id,
+        fullName: nome,
+        cpf,
+        purchaseNumber: numeroCompra,
+        couponNumber: couponNumber,
+        registrationDate: serverTimestamp(),
+      };
+      
+      // Perform transaction writes
+      transaction.set(counterRef, { lastNumber: nextNumber }, { merge: true });
+      transaction.set(couponRef, couponData);
 
+      return couponNumber;
+    }).then((newCouponNumberStr) => {
       setState({
         message: 'Cadastro realizado com sucesso!',
         coupon: newCouponNumberStr,
       });
-    } catch (error) {
-      console.error(error);
-      setState({
-        message:
-          'Erro no servidor. Não foi possível gerar o cupom. Tente novamente mais tarde.',
-      });
-    }
+    }).catch((error: any) => {
+      // This is our new, detailed error handling.
+      if (error.name === 'FirebaseError' && (error.code === 'permission-denied' || error.code === 'unauthenticated')) {
+        // We can guess the operation was a write.
+        // The exact failing doc isn't known without parsing the error, but we know the collections.
+        const permissionError = new FirestorePermissionError({
+          path: 'coupons/{couponId} OR counters/coupons', // Path that likely failed
+          operation: 'write',
+          requestResourceData: { fullName: nome, cpf, purchaseNumber: numeroCompra },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      } else {
+         setState({
+            message: error.message || 'Erro no servidor. Não foi possível gerar o cupom. Tente novamente mais tarde.',
+         });
+      }
+    });
   };
 
   return (
     <div className="space-y-6">
-      <form ref={formRef} action={generateCouponAction} className="space-y-4">
+      <form
+        ref={formRef}
+        action={generateCouponAction}
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          generateCouponAction(new FormData(e.currentTarget));
+        }}
+      >
         <div>
           <Label htmlFor="nome">Nome Completo</Label>
-          <Input
-            id="nome"
-            name="nome"
-            placeholder="Seu nome completo"
-            required
-            aria-describedby="nome-error"
-          />
-          {state.errors?.nome && (
-            <p id="nome-error" className="text-sm font-medium text-destructive mt-1">
-              {state.errors.nome[0]}
-            </p>
-          )}
+          <Input id="nome" name="nome" placeholder="Seu nome completo" required />
         </div>
         <div>
           <Label htmlFor="cpf">CPF</Label>
@@ -162,28 +201,11 @@ export function RegistrationForm() {
             required
             maxLength={11}
             pattern="\d{11}"
-            aria-describedby="cpf-error"
           />
-          {state.errors?.cpf && (
-            <p id="cpf-error" className="text-sm font-medium text-destructive mt-1">
-              {state.errors.cpf[0]}
-            </p>
-          )}
         </div>
         <div>
           <Label htmlFor="numeroCompra">Número da Compra</Label>
-          <Input
-            id="numeroCompra"
-            name="numeroCompra"
-            placeholder="Ex: 123456"
-            required
-            aria-describedby="compra-error"
-          />
-          {state.errors?.numeroCompra && (
-            <p id="compra-error" className="text-sm font-medium text-destructive mt-1">
-              {state.errors.numeroCompra[0]}
-            </p>
-          )}
+          <Input id="numeroCompra" name="numeroCompra" placeholder="Ex: 123456" required />
         </div>
         <SubmitButton />
       </form>
