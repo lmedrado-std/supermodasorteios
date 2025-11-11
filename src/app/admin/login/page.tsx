@@ -48,7 +48,7 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    const adminEmail = 'admin@supermoda.com';
+    const adminEmail = 'supermoda@supermoda.com';
 
     try {
       // 1. Tenta fazer o login
@@ -79,7 +79,7 @@ export default function LoginPage() {
           const adminRoleRef = doc(firestore, 'roles_admin', newAdminUser.uid);
           await setDoc(adminRoleRef, {
             id: newAdminUser.uid,
-            username: 'admin',
+            username: 'supermoda',
           });
 
           toast({
