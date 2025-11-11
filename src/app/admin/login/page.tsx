@@ -12,7 +12,7 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui/card';
-import { LogIn, Loader2 } from 'lucide-react';
+import { LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
@@ -20,6 +20,7 @@ import { Footer } from '@/components/Footer';
 
 export default function LoginPage() {
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { toast } = useToast();
   const auth = useAuth();
@@ -48,9 +49,7 @@ export default function LoginPage() {
 
     try {
       const email = 'admin@supermoda.com';
-      // TEMPORARY: Hardcoded password to restore access
-      const fixedPassword = 'supermoda';
-      await signInWithEmailAndPassword(auth, email, fixedPassword);
+      await signInWithEmailAndPassword(auth, email, password);
       // O useEffect cuidará do redirecionamento para /admin após a mudança de estado do usuário.
     } catch (error: any) {
       let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
@@ -96,16 +95,28 @@ export default function LoginPage() {
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <Label htmlFor="password">Senha</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder='Digite sua senha'
-                    autoFocus
-                  />
+                  <div className="relative">
+                    <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder='Digite sua senha'
+                        autoFocus
+                    />
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute inset-y-0 right-0 h-full px-3"
+                        onClick={() => setShowPassword(!showPassword)}
+                    >
+                        {showPassword ? <EyeOff /> : <Eye />}
+                         <span className="sr-only">{showPassword ? 'Ocultar' : 'Mostrar'} senha</span>
+                    </Button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoggingIn}>
                   {isLoggingIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
