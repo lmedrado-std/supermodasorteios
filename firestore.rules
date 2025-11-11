@@ -68,13 +68,13 @@ service cloud.firestore {
     }
 
     /**
-     * @description Secures winner history. Public can read, only admins can create.
+     * @description Secures winner history. Public can read, only admins can create or delete.
      * @path /winners/{winnerId}
      */
     match /winners/{winnerId} {
         allow get, list: if true;
         allow create: if isAdmin();
-        allow update, delete: if false; // Winners are immutable records.
+        allow update, delete: if isAdmin();
     }
 
     // Helper functions
