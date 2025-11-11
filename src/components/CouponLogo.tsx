@@ -18,16 +18,6 @@ export function CouponLogo(props: SVGProps<SVGSVGElement>) {
         <tspan>super</tspan>
         <tspan>moda</tspan>
       </text>
-      <text
-        fontFamily="'PT Sans', sans-serif"
-        fontSize="12"
-        fill="#DC2626"
-        x="138"
-        y="35"
-        dominantBaseline="middle"
-      >
-        calçados
-      </text>
     </svg>
   );
 }

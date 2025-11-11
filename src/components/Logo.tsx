@@ -17,16 +17,6 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
         <tspan fill="#E64968">super</tspan>
         <tspan fill="#5C67A8">moda</tspan>
       </text>
-      <text
-        fontFamily="'PT Sans', sans-serif"
-        fontSize="14"
-        fill="#5C67A8"
-        x="158"
-        y="42"
-        dominantBaseline="middle"
-      >
-        calçados
-      </text>
     </svg>
   );
 }
