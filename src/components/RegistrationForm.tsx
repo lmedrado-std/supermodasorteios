@@ -266,32 +266,32 @@ export function RegistrationForm() {
       )}
 
       {showSuccess && state.coupons && state.coupons.length > 0 && (
-        <div className="text-center">
+         <div className="text-center animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
             <Alert
               variant="default"
-              className="mb-4 bg-green-100 border-green-400 text-green-700 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300"
+              className="mb-6 bg-green-100 border-green-400 text-green-700 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300"
             >
               <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertTitle>Sucesso!</AlertTitle>
+              <AlertTitle>Sucesso! Seus cupons foram gerados!</AlertTitle>
               <AlertDescription>
-                Seus cupons foram gerados! Salve a imagem abaixo.
+                Salve a imagem abaixo para não perdê-los.
               </AlertDescription>
             </Alert>
 
-            <div ref={couponContainerRef} className="bg-card p-6 rounded-lg border-2 border-dashed border-primary/50 shadow-lg inline-block w-full max-w-md">
+            <div ref={couponContainerRef} className="bg-gradient-to-br from-background to-secondary/50 p-6 rounded-lg border-2 border-dashed border-primary/50 shadow-lg inline-block w-full max-w-md">
                 <div className="text-center space-y-4">
                     <Logo className="h-10 w-auto mx-auto"/>
-                    <p className="text-muted-foreground">Parabéns pelos seus cupons!</p>
-                    <p className="text-lg font-bold">{state.fullName}</p>
-                    <div className="bg-primary text-primary-foreground rounded-md px-6 py-3 space-y-2">
-                        <p className="text-sm">Seus Números da Sorte são:</p>
-                        <div className="grid grid-cols-2 gap-2">
+                    <p className="text-muted-foreground">Parabéns! Guarde seus números da sorte.</p>
+                    <p className="text-2xl font-bold text-primary">{state.fullName}</p>
+                    <div className="bg-primary/10 border border-primary/20 rounded-md px-4 py-3 space-y-2">
+                        <p className="text-sm font-semibold text-primary">Seus Números da Sorte:</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                           {state.coupons.map(coupon => (
-                            <p key={coupon} className="text-xl font-bold tracking-wider">{coupon}</p>
+                            <p key={coupon} className="text-2xl font-bold tracking-wider text-foreground">{coupon}</p>
                           ))}
                         </div>
                     </div>
-                    <p className="text-xs text-muted-foreground pt-2">Boa Sorte!</p>
+                    <p className="text-xs text-muted-foreground pt-2">Boa Sorte no sorteio! 🍀</p>
                 </div>
             </div>
 
@@ -304,3 +304,5 @@ export function RegistrationForm() {
     </div>
   );
 }
+
+    
