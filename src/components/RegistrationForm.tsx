@@ -17,6 +17,7 @@ import {
   serverTimestamp,
   writeBatch,
   getDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -24,16 +25,23 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import html2canvas from 'html2canvas';
 import { CouponLogo } from './CouponLogo';
 import { QRCodePlaceholder } from './QRCodePlaceholder';
+import { format } from 'date-fns';
 
 
 const initialState: {
   message: string | null;
   coupons?: string[];
   fullName?: string | null;
+  purchaseValue?: number | null;
+  purchaseNumber?: string | null;
+  registrationDate?: Date | null;
 } = {
   message: null,
   coupons: [],
   fullName: null,
+  purchaseValue: null,
+  purchaseNumber: null,
+  registrationDate: null,
 };
 
 type RaffleSettings = {
@@ -190,6 +198,7 @@ export function RegistrationForm() {
     }
 
     const counterRef = doc(firestore, 'counters', 'coupons');
+    const registrationDate = new Date();
 
     runTransaction(firestore, async (transaction) => {
         const counterDoc = await transaction.get(counterRef);
@@ -216,7 +225,7 @@ export function RegistrationForm() {
                 purchaseNumber: numeroCompra,
                 purchaseValue: valorCompra,
                 couponNumber: couponNumber,
-                registrationDate: serverTimestamp(),
+                registrationDate: Timestamp.fromDate(registrationDate),
             };
             batch.set(couponRef, couponData);
         }
@@ -231,6 +240,9 @@ export function RegistrationForm() {
         message: null,
         coupons: generatedCoupons,
         fullName: nome,
+        purchaseValue: valorCompra,
+        purchaseNumber: numeroCompra,
+        registrationDate: registrationDate,
       });
     }).catch((error: any) => {
       console.error("Transaction failed: ", error);
@@ -292,6 +304,12 @@ export function RegistrationForm() {
                         <QRCodePlaceholder className="w-28 h-28" />
                     </div>
 
+                    <div className="text-left text-xs text-gray-600 space-y-1 pt-4 border-t border-dashed">
+                      <p><span className="font-bold">Data:</span> {state.registrationDate ? format(state.registrationDate, 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
+                      <p><span className="font-bold">Valor:</span> R$ {state.purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}</p>
+                      <p><span className="font-bold">Nº Compra:</span> {state.purchaseNumber ?? 'N/A'}</p>
+                    </div>
+
                     <div className="flex justify-between items-center pt-4">
                         <p className="text-xs font-semibold text-amber-600">♦︎♦︎ Boa Sorte!</p>
                         <Button onClick={handleSaveCoupon} size="sm" className="bg-red-600 text-white rounded-full px-6 shadow-md border-2 border-amber-400 hover:bg-red-700">
@@ -317,7 +335,8 @@ export function RegistrationForm() {
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          generateCouponAction(new FormData(e.currentTarget));
+          const formData = new FormData(e.currentTarget);
+          generateCouponAction(formData);
         }}
       >
         <div>
@@ -331,7 +350,7 @@ export function RegistrationForm() {
             name="cpf"
             placeholder="Apenas números"
             required
-            maxLength={11}
+            maxLength={14}
           />
         </div>
         <div>

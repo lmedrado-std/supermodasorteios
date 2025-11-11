@@ -24,6 +24,7 @@ import { Search, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { CouponLogo } from '@/components/CouponLogo';
 import { QRCodePlaceholder } from '@/components/QRCodePlaceholder';
+import { format } from 'date-fns';
 
 
 type Coupon = {
@@ -123,7 +124,7 @@ function MeusCuponsPage() {
                     placeholder="Apenas números"
                     value={cpf}
                     onChange={(e) => setCpf(e.target.value)}
-                    maxLength={11}
+                    maxLength={14}
                   />
                 </div>
                 <Button
@@ -171,6 +172,13 @@ function MeusCuponsPage() {
                                     <CouponLogo className="w-40 h-auto" />
                                     <QRCodePlaceholder className="w-28 h-28" />
                                 </div>
+
+                                <div className="text-left text-xs text-gray-600 space-y-1 pt-4 border-t border-dashed">
+                                  <p><span className="font-bold">Data:</span> {coupons[0].registrationDate ? format(coupons[0].registrationDate.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
+                                  <p><span className="font-bold">Valor:</span> R$ {coupons[0].purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}</p>
+                                  <p><span className="font-bold">Nº Compra:</span> {coupons[0].purchaseNumber ?? 'N/A'}</p>
+                                </div>
+
 
                                 <div className="flex justify-between items-center pt-4">
                                      <p className="text-xs font-semibold text-amber-600">♦︎♦︎ Boa Sorte!</p>
