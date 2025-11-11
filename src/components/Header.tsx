@@ -14,17 +14,17 @@ export function Header() {
     <header className="bg-card shadow-sm sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between p-4">
          <Link href="/">
-          <Logo className="h-10 md:h-12 w-auto" />
+          <Logo className="h-8 md:h-10 w-auto" />
         </Link>
         
-        <nav className="flex items-center gap-2 md:gap-4 text-sm md:text-base text-muted-foreground">
-          <Link href="/" className="hover:text-primary hover:underline px-2">
+        <nav className="flex items-center gap-0 md:gap-2 text-sm text-muted-foreground">
+          <Link href="/" className="hover:text-primary hover:underline px-1 sm:px-2">
             Início
           </Link>
-          <Link href="/meus-cupons" className="hover:text-primary hover:underline px-2">
+          <Link href="/meus-cupons" className="hover:text-primary hover:underline px-1 sm:px-2">
             Cupons
           </Link>
-           <Link href="/regulamento" className="hover:text-primary hover:underline px-2 flex items-center gap-1">
+           <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2 flex items-center gap-1">
             Regulamento
           </Link>
           <TooltipProvider>

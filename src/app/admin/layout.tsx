@@ -19,21 +19,17 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isUserLoading) {
-      return; // Aguarda a verificação inicial do usuário
+      return;
     }
 
     if (!user) {
-      // Se não há usuário e já estamos na página de login, não faz nada.
-      // Se estiver em outra página admin, redireciona para o login.
       if (pathname !== '/admin/login') {
         router.push('/admin/login');
       }
-      // Garante que o estado de admin está limpo para não logados
       if (isAdmin !== false) setIsAdmin(false); 
       return;
     }
 
-    // Se o usuário está logado, mas o status de admin ainda não foi verificado
     if (isAdmin === null && firestore) {
       const checkAdmin = async () => {
         try {
@@ -42,14 +38,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           
           if (adminDoc.exists()) {
             setIsAdmin(true);
-            // Se for admin e estiver na página de login, redireciona para o painel principal
             if (pathname === '/admin/login') {
                 router.push('/admin');
             }
           } else {
             setIsAdmin(false);
-            if (auth) await signOut(auth); // Desloga por segurança
-            router.push('/admin/login'); // Redireciona para o login
+            if (auth) await signOut(auth);
+            router.push('/admin/login');
           }
         } catch (error) {
           console.error("Error checking admin status:", error);
@@ -67,12 +62,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
+      setIsAdmin(null);
       router.push('/admin/login');
     }
   };
 
-  // Tela de carregamento enquanto o estado do usuário está sendo determinado
-  if (isUserLoading || (user && isAdmin === null)) {
+  if (isUserLoading || (user && isAdmin === null && pathname !== '/admin/login')) {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-4">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -81,12 +76,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Se o usuário não está logado e está na página de login, mostra a página de login.
   if (!user && pathname === '/admin/login') {
     return <>{children}</>;
   }
   
-  // Se o usuário está logado e é admin, mostra o layout do admin.
   if (user && isAdmin) {
     return (
         <div className="min-h-screen bg-muted/40">
@@ -100,7 +93,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   Painel Administrativo
                 </h1>
               </div>
-              <nav className="flex items-center gap-2 md:gap-4 text-sm text-muted-foreground">
+              <nav className="flex items-center gap-0 md:gap-2 text-sm text-muted-foreground">
                   <Link href="/" className="hover:text-primary hover:underline px-2">
                     Início
                   </Link>
@@ -124,8 +117,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Fallback para qualquer outro caso (ex: usuário não-admin tentando acessar uma página)
-  // O useEffect já deve ter redirecionado, mas isso serve como uma segurança.
    return (
        <div className="flex flex-col justify-center items-center h-screen gap-4">
          <Loader2 className="h-8 w-8 animate-spin" />
