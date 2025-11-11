@@ -17,14 +17,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Public users can create coupons if they provide valid data. Only admins can modify or delete them.
-     * Anyone can read coupon data (e.g., for the "Meus Cupons" page).
+     * @description Public users (anonymous or authenticated) can create coupons if they provide valid data.
+     * Admins can modify or delete them. Anyone can read coupon data.
      * @path /coupons/{couponId}
      */
     match /coupons/{couponId} {
       allow get, list: if true;
-      allow create: if request.auth == null // Allow anonymous/public creation
-                    && request.resource.data.fullName is string
+      allow create: if request.resource.data.fullName is string
                     && request.resource.data.cpf is string
                     && request.resource.data.telefone is string
                     && request.resource.data.purchaseNumber is string
