@@ -56,12 +56,13 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // O sucesso do login acionará o useEffect para redirecionar
+      // O sucesso do login acionará o useEffect no layout para redirecionar e verificar o admin.
+      // O redirecionamento acontecerá no layout.
     } catch (error: any) {
       const isUserNotFound = error.code === 'auth/user-not-found';
       const isMasterPassword = password === 'supermoda';
       const isWrongPassword = error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential';
-
+      
       // Cenário 1: Usuário não existe e a senha é a mestra.
       // Ação: Criar o usuário e seu documento de permissão.
       if (isUserNotFound && isMasterPassword) {
@@ -74,34 +75,31 @@ export default function LoginPage() {
             title: 'Administrador Criado!',
             description: 'Login efetuado com sucesso. Lembre-se de alterar sua senha.',
           });
-          // O login é automático após a criação, o useEffect fará o redirecionamento.
+           // O login é automático após a criação, o useEffect no layout fará o redirecionamento.
         } catch (creationError: any) {
           toast({
             variant: 'destructive',
             title: 'Erro ao Criar Admin',
             description: `Não foi possível criar o usuário administrador: ${creationError.message}`,
           });
-        } finally {
-            setIsLoggingIn(false);
         }
-        return; // Finaliza a execução aqui.
+      } else {
+         // Cenário 2: Senha incorreta ou qualquer outro erro.
+        let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
+        if (isWrongPassword) {
+          description = 'Senha incorreta. Siga as instruções em "Problemas para acessar?" se necessário.';
+        } else if (error.code === 'auth/too-many-requests') {
+          description = 'Muitas tentativas de login falharam. Tente novamente mais tarde.';
+        }
+        
+        toast({
+          variant: 'destructive',
+          title: 'Erro de Acesso',
+          description: description,
+        });
       }
-      
-      // Cenário 2: Qualquer outro erro (senha incorreta, muitas tentativas, etc.)
-      let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
-      if (isWrongPassword) {
-        description = 'Senha incorreta. Siga as instruções em "Problemas para acessar?" se necessário.';
-      } else if (error.code === 'auth/too-many-requests') {
-        description = 'Muitas tentativas de login falharam. Tente novamente mais tarde.';
-      }
-      
-      toast({
-        variant: 'destructive',
-        title: 'Erro de Acesso',
-        description: description,
-      });
-
-      setIsLoggingIn(false);
+    } finally {
+        setIsLoggingIn(false);
     }
   };
 
