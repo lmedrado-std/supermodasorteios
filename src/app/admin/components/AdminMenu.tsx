@@ -52,11 +52,13 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !user.email) {
+    const currentUser = auth.currentUser; // Use a fresh instance of the user
+
+    if (!currentUser || !currentUser.email) {
        toast({
             variant: 'destructive',
             title: 'Erro de Autenticação',
-            description: 'Usuário não encontrado.',
+            description: 'Sessão de usuário inválida. Por favor, faça login novamente.',
         });
       return;
     }
@@ -79,13 +81,12 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
         return;
     }
 
-
     setIsUpdating(true);
     
     try {
-        const credential = EmailAuthProvider.credential(user.email, currentPassword);
-        await reauthenticateWithCredential(user, credential);
-        await updatePassword(user, newPassword);
+        const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+        await reauthenticateWithCredential(currentUser, credential);
+        await updatePassword(currentUser, newPassword);
 
         toast({
             title: 'Sucesso!',
@@ -99,6 +100,8 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
         description = 'A senha atual está incorreta.';
       } else if (error.code === 'auth/too-many-requests') {
         description = 'Muitas tentativas. Tente novamente mais tarde.';
+      } else if (error.code === 'auth/user-mismatch') {
+        description = 'Houve um problema com sua sessão. Tente fazer login novamente.';
       }
       toast({
         variant: 'destructive',
