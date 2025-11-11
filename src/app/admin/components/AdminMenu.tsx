@@ -240,5 +240,3 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
     </>
   );
 }
-
-    
