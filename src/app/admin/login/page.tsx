@@ -5,7 +5,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -88,10 +88,16 @@ export default function LoginPage() {
         }
       } else {
         // 3. Se for outro erro (senha errada, etc.)
+        let errorMessage = 'Ocorreu um erro desconhecido.';
+        if (error.code === 'auth/wrong-password') {
+            errorMessage = 'A senha está incorreta.';
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
+        }
         toast({
           variant: 'destructive',
           title: 'Erro de Acesso',
-          description: 'A senha está incorreta.',
+          description: errorMessage,
         });
       }
     } finally {
