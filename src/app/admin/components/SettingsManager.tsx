@@ -21,47 +21,56 @@ const SETTINGS_DOC_PATH = 'settings/raffle';
 export function SettingsManager() {
   const firestore = useFirestore();
   const settingsDocRef = useMemoFirebase(
-    () => firestore ? doc(firestore, SETTINGS_DOC_PATH) : null,
+    () => (firestore ? doc(firestore, SETTINGS_DOC_PATH) : null),
     [firestore]
   );
 
-  const { data: settings, isLoading: isLoadingSettings } = useDoc<{ valuePerCoupon: number }>(settingsDocRef);
-  
-  const [valuePerCoupon, setValuePerCoupon] = useState<number>(200);
+  const { data: settings, isLoading: isLoadingSettings } = useDoc<{
+    valuePerCoupon: number;
+  }>(settingsDocRef);
+
+  const [valuePerCoupon, setValuePerCoupon] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  
+
   useEffect(() => {
-    if (settings && settings.valuePerCoupon) {
-      setValuePerCoupon(settings.valuePerCoupon);
+    if (settings && typeof settings.valuePerCoupon === 'number') {
+      setValuePerCoupon(String(settings.valuePerCoupon));
     }
   }, [settings]);
 
   const handleSave = async () => {
     if (!settingsDocRef) return;
 
-    if (valuePerCoupon <= 0) {
+    const numericValue = parseFloat(valuePerCoupon);
+
+    if (isNaN(numericValue) || numericValue <= 0) {
       toast({
         variant: 'destructive',
         title: 'Valor Inválido',
-        description: 'O valor por cupom deve ser maior que zero.',
+        description: 'O valor por cupom deve ser um número maior que zero.',
       });
       return;
     }
 
     setIsSaving(true);
     try {
-      await setDoc(settingsDocRef, { valuePerCoupon: Number(valuePerCoupon) }, { merge: true });
+      await setDoc(
+        settingsDocRef,
+        { valuePerCoupon: numericValue },
+        { merge: true }
+      );
       toast({
         title: 'Sucesso!',
         description: 'Configurações salvas.',
       });
     } catch (error) {
-      console.error("Error saving settings:", error);
+      console.error('Error saving settings:', error);
       toast({
         variant: 'destructive',
         title: 'Erro ao Salvar',
-        description: 'Não foi possível salvar as configurações. Tente novamente.',
+        description:
+          'Não foi possível salvar as configurações. Tente novamente.',
       });
     } finally {
       setIsSaving(false);
@@ -78,20 +87,18 @@ export function SettingsManager() {
       </CardHeader>
       <CardContent>
         {isLoadingSettings ? (
-            <div className="flex items-center space-x-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Carregando configurações...</span>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Carregando configurações...</span>
+          </div>
         ) : (
-            <div className="space-y-2">
-            <Label htmlFor="value-per-coupon">
-              Valor por Cupom (R$)
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="value-per-coupon">Valor por Cupom (R$)</Label>
             <Input
               id="value-per-coupon"
               type="number"
               value={valuePerCoupon}
-              onChange={(e) => setValuePerCoupon(parseFloat(e.target.value))}
+              onChange={(e) => setValuePerCoupon(e.target.value)}
               placeholder="Ex: 200"
             />
             <p className="text-xs text-muted-foreground">
@@ -99,7 +106,6 @@ export function SettingsManager() {
             </p>
           </div>
         )}
-        
       </CardContent>
       <CardFooter>
         <Button onClick={handleSave} disabled={isSaving || isLoadingSettings}>
