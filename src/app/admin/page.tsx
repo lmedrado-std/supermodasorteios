@@ -2,6 +2,7 @@
 import { useUser } from '@/firebase';
 import { useEffect } from 'react';
 import { AdminTable } from './components/AdminTable';
+import { SettingsManager } from './components/SettingsManager';
 import { Logo } from '@/components/Logo';
 import Link from 'next/link';
 import {
@@ -75,12 +76,13 @@ export default function AdminPage() {
             <Logo className="h-8 md:h-10 w-auto" />
           </Link>
           <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline">
-            Cupons Gerados
+            Painel Administrativo
           </h1>
           <AdminMenu user={user} auth={auth} onLogout={() => handleLogout(auth)} />
         </div>
       </header>
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        <SettingsManager />
         <AdminTable />
       </main>
     </div>

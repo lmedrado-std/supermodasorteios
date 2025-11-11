@@ -65,6 +65,19 @@
         "id",
         "username"
       ]
+    },
+    "RaffleSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RaffleSettings",
+      "type": "object",
+      "description": "Stores settings for the raffle.",
+      "properties": {
+        "valuePerCoupon": {
+          "type": "number",
+          "description": "The purchase value required to generate one coupon."
+        }
+      },
+      "required": ["valuePerCoupon"]
     }
   },
   "auth": {
@@ -82,7 +95,7 @@
           "schema": {
             "$ref": "#/backend/entities/Coupon"
           },
-          "description": "Stores raffle coupon data. The '{couponId}' is the unique coupon identifier.",
+          "description": "Stores raffle coupon data.",
           "params": [
             {
               "name": "couponId",
@@ -98,13 +111,23 @@
           "schema": {
             "$ref": "#/backend/entities/AdminUser"
           },
-          "description": "Documents in this collection grant admin access. Existence of a document for a given UID grants admin privileges.",
+          "description": "Documents in this collection grant admin access.",
           "params": [
             {
               "name": "adminUserId",
               "description": "The Firebase Auth UID of the admin user."
             }
           ]
+        }
+      },
+      {
+        "path": "/settings/raffle",
+        "definition": {
+            "entityName": "RaffleSettings",
+            "schema": {
+                "$ref": "#/backend/entities/RaffleSettings"
+            },
+            "description": "Stores application settings for the raffle."
         }
       }
     ],

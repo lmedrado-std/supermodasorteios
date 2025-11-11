@@ -7,17 +7,12 @@
  * Data Structure:
  * - `/coupons/{couponId}`: Stores individual raffle coupon data.
  * - `/roles_admin/{adminUserId}`: Presence of a document grants admin privileges to the corresponding user.
+ * - `/settings/raffle`: Stores application settings, like value per coupon.
  *
  * Key Security Decisions:
- * - Public read access to coupons is allowed.
+ * - Public read access to coupons and settings is allowed.
  * - Admin privileges are determined by the existence of a document in the `/roles_admin` collection.
- * - Data validation is relaxed to allow for rapid prototyping but authorization checks are strictly enforced.
- *
- * Denormalization for Authorization:
- * - Admin status is denormalized into the `/roles_admin/{adminUserId}` collection. This avoids complex queries to determine admin privileges.
- *
- * Structural Segregation:
- * - Coupons and admin user roles are stored in separate collections for improved security and scalability.
+ * - Data validation is relaxed for prototyping, but authorization checks are strict.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -26,11 +21,6 @@ service cloud.firestore {
     /**
      * @description Grants public read access to coupons and restricts write access to admins.
      * @path /coupons/{couponId}
-     * @allow (get, list): Any user can read coupon data.
-     * @allow (create): Any user can create a coupon.
-     * @allow (update, delete): Only admin users can create, update, or delete coupons.
-     * @deny (update, delete): Non-admin users cannot modify coupon data.
-     * @principle Allows public reads and admin-only writes.
      */
     match /coupons/{couponId} {
       allow get, list: if true;
@@ -39,43 +29,37 @@ service cloud.firestore {
     }
     
     /**
-     * @description Allows any user to write to the counters collection. This is necessary for the public registration form to increment the coupon counter.
+     * @description Enables public write access for coupon generation counter.
      * @path /counters/{counterId}
-     * @allow (read, write): Any user can read or write to the counters.
-     * @principle Enables public write access for coupon generation.
      */
     match /counters/{counterId} {
         allow read, write: if true;
     }
-
+    
     /**
-     * @description Grants create access to /roles_admin/{adminUserId} only if the authenticated user's UID matches the document ID, effectively allowing self-assignment of admin role. Grants read access to admins. Denies update and delete to all users.
+     * @description Secures admin role documents.
      * @path /roles_admin/{adminUserId}
-     * @allow (create): Allows a user to create their own admin role document if their UID matches the document ID.
-     * @allow (get, list): Allows only admins to read the admin roles collection.
-     * @deny (update, delete): Prevents anyone from updating or deleting admin role documents.
-     * @deny (create): Prevents creating admin role documents with mismatched UIDs.
-     * @principle Enforces document ownership and restricts modification of admin roles.
      */
     match /roles_admin/{adminUserId} {
       allow get, list: if isAdmin();
       allow create: if request.auth.uid == adminUserId;
       allow update, delete: if false;
     }
+    
+    /**
+     * @description Secures application settings. Public can read, only admins can write.
+     * @path /settings/{settingId}
+     */
+    match /settings/{settingId} {
+      allow get, list: if true;
+      allow write: if isAdmin();
+    }
 
     // Helper functions
-    /**
-     * @description Checks if the user is signed in.
-     * @return {bool} True if the user is signed in, false otherwise.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * @description Checks if the user is an admin by verifying the existence of a document in the /roles_admin collection with their UID.
-     * @return {bool} True if the user is an admin, false otherwise.
-     */
     function isAdmin() {
       return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }

@@ -16,6 +16,7 @@ import {
   doc,
   serverTimestamp,
   writeBatch,
+  getDoc,
 } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -37,28 +38,21 @@ function SubmitButton() {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    // A simple way to manage form pending state without useFormStatus
     const form = document.querySelector('form');
     if (!form) return;
 
-    const handleSubmit = () => {
-      setPending(true);
-    };
+    const handleSubmit = () => setPending(true);
+    const handleFormEnd = () => setPending(false);
 
-    const handleReset = () => {
-      setPending(false);
-    };
-    
-    // This is a simplification; a real app might need a more robust state management
     form.addEventListener('submit', handleSubmit);
-    // Assuming form is reset on success/error which stops pending
-    // We don't have a direct 'end' event, so this is an approximation.
+    // This is a custom event to signal the end of processing
+    document.addEventListener('formProcessingEnd', handleFormEnd);
     
     return () => {
       form.removeEventListener('submit', handleSubmit);
+      document.removeEventListener('formProcessingEnd', handleFormEnd);
     };
   }, []);
-
 
   return (
     <Button type="submit" className="w-full text-lg py-6" disabled={pending}>
@@ -76,17 +70,12 @@ export function RegistrationForm() {
   const couponContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const signalFormEnd = () => {
+    document.dispatchEvent(new CustomEvent('formProcessingEnd'));
+  };
+
   useEffect(() => {
-    if (state.coupons && state.coupons.length > 0) {
-      // Success
-      setShowSuccess(true);
-      formRef.current?.reset();
-      const timer = setTimeout(() => {
-        setShowSuccess(false);
-        setState(initialState); // Reset state
-      }, 30000); // Increased time to allow saving
-      return () => clearTimeout(timer);
-    } else if (state.message) {
+    if (state.message) {
       // Error from server (e.g., duplicate, db error)
       toast({
         variant: 'destructive',
@@ -94,14 +83,21 @@ export function RegistrationForm() {
         description: state.message,
       });
       setState(initialState); // Reset state after showing toast
+      signalFormEnd();
+    } else if (state.coupons && state.coupons.length > 0) {
+      // Success
+      setShowSuccess(true);
+      formRef.current?.reset();
+      signalFormEnd();
+      // Auto-hide logic is removed to allow user to save image
     }
   }, [state, toast]);
 
   const handleSaveCoupon = () => {
     if (couponContainerRef.current) {
       html2canvas(couponContainerRef.current, {
-        backgroundColor: null, // Use element's background
-        scale: 2, // Increase resolution
+        backgroundColor: null,
+        scale: 2,
       }).then((canvas) => {
         const link = document.createElement('a');
         const firstCoupon = state.coupons ? state.coupons[0] : 'cupom';
@@ -111,7 +107,6 @@ export function RegistrationForm() {
       });
     }
   };
-
 
   const generateCouponAction = async (formData: FormData) => {
     if (!firestore) {
@@ -124,7 +119,6 @@ export function RegistrationForm() {
     const numeroCompra = formData.get('numeroCompra') as string;
     const valorCompraStr = (formData.get('valorCompra') as string).replace(',', '.');
     const valorCompra = parseFloat(valorCompraStr);
-
 
     if (!nome || !cpf || !numeroCompra || !valorCompraStr) {
       setState({ message: 'Preencha todos os campos.' });
@@ -139,13 +133,11 @@ export function RegistrationForm() {
         return;
     }
 
-    // Check for duplicates first
     const q = query(
       collection(firestore, 'coupons'),
       where('cpf', '==', cpf),
       where('purchaseNumber', '==', numeroCompra)
     );
-
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
@@ -155,11 +147,22 @@ export function RegistrationForm() {
       return;
     }
     
-    // Logic to determine number of coupons
-    const couponsToGenerate = Math.floor(valorCompra / 200);
+    // Fetch coupon generation rule from settings
+    let valuePerCoupon = 200; // Default value
+    try {
+        const settingsDocRef = doc(firestore, 'settings/raffle');
+        const settingsDoc = await getDoc(settingsDocRef);
+        if (settingsDoc.exists() && settingsDoc.data().valuePerCoupon > 0) {
+            valuePerCoupon = settingsDoc.data().valuePerCoupon;
+        }
+    } catch(e) {
+        console.warn("Could not fetch raffle settings. Using default value.", e)
+    }
+
+    const couponsToGenerate = Math.floor(valorCompra / valuePerCoupon);
 
     if (couponsToGenerate < 1) {
-        setState({ message: 'O valor da compra deve ser de no mínimo R$ 200,00 para gerar um cupom.' });
+        setState({ message: `O valor da compra deve ser de no mínimo R$ ${valuePerCoupon.toFixed(2).replace('.',',')} para gerar um cupom.` });
         return;
     }
 
@@ -171,7 +174,6 @@ export function RegistrationForm() {
         if (counterDoc.exists()) {
             currentNumber = counterDoc.data().lastNumber || 0;
         } else {
-            // Initialize counter if it doesn't exist
             transaction.set(counterRef, { lastNumber: 0 });
         }
         
@@ -196,21 +198,19 @@ export function RegistrationForm() {
             batch.set(couponRef, couponData);
         }
 
-        // Update the counter in the transaction
         const finalCounterNumber = currentNumber + couponsToGenerate;
         transaction.set(counterRef, { lastNumber: finalCounterNumber }, { merge: true });
 
-        // The batch commit must be outside the transaction to avoid issues
         await batch.commit();
-
-        return newCoupons; // Return the generated coupon numbers
+        return newCoupons;
     }).then((generatedCoupons) => {
       setState({
-        message: 'Cadastro realizado com sucesso!',
+        message: null,
         coupons: generatedCoupons,
         fullName: nome,
       });
     }).catch((error: any) => {
+      console.error("Transaction failed: ", error);
       if (error.name === 'FirebaseError' && (error.code === 'permission-denied' || error.code === 'unauthenticated')) {
         const permissionError = new FirestorePermissionError({
           path: 'coupons/{couponId} OR counters/coupons',
@@ -218,6 +218,7 @@ export function RegistrationForm() {
           requestResourceData: { fullName: nome, cpf, purchaseNumber: numeroCompra, purchaseValue: valorCompra },
         });
         errorEmitter.emit('permission-error', permissionError);
+        setState({ message: 'Erro de permissão. Contate o administrador.' });
       } else {
          setState({
             message: error.message || 'Erro no servidor. Não foi possível gerar o cupom. Tente novamente mais tarde.',
@@ -226,84 +227,87 @@ export function RegistrationForm() {
     });
   };
 
-  return (
-    <div className="space-y-6">
-      {!showSuccess && (
-        <form
-          ref={formRef}
-          action={generateCouponAction}
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            generateCouponAction(new FormData(e.currentTarget));
-          }}
-        >
-          <div>
-            <Label htmlFor="nome">Nome Completo</Label>
-            <Input id="nome" name="nome" placeholder="Seu nome completo" required />
-          </div>
-          <div>
-            <Label htmlFor="cpf">CPF</Label>
-            <Input
-              id="cpf"
-              name="cpf"
-              placeholder="Apenas números"
-              required
-              maxLength={11}
-              pattern="\d{11}"
-            />
-          </div>
-          <div>
-            <Label htmlFor="numeroCompra">Número da Compra</Label>
-            <Input id="numeroCompra" name="numeroCompra" placeholder="Ex: 123456" required />
-            <p className="text-xs text-muted-foreground mt-1">Este número deve ser o mesmo da nota fiscal para validação na loja.</p>
-          </div>
-          <div>
-            <Label htmlFor="valorCompra">Valor da Compra (R$)</Label>
-            <Input id="valorCompra" name="valorCompra" placeholder="Ex: 250,50" required inputMode="decimal" />
-          </div>
-          <SubmitButton />
-        </form>
-      )}
+  if (showSuccess) {
+    return (
+       <div className="text-center animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
+          <Alert
+            variant="default"
+            className="mb-6 bg-green-100 border-green-400 text-green-700 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300"
+          >
+            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <AlertTitle>Sucesso! Seus cupons foram gerados!</AlertTitle>
+            <AlertDescription>
+              Salve a imagem abaixo para não perdê-los.
+            </AlertDescription>
+          </Alert>
 
-      {showSuccess && state.coupons && state.coupons.length > 0 && (
-         <div className="text-center animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
-            <Alert
-              variant="default"
-              className="mb-6 bg-green-100 border-green-400 text-green-700 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300"
-            >
-              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertTitle>Sucesso! Seus cupons foram gerados!</AlertTitle>
-              <AlertDescription>
-                Salve a imagem abaixo para não perdê-los.
-              </AlertDescription>
-            </Alert>
+          <div ref={couponContainerRef} className="bg-gradient-to-br from-background to-secondary/50 p-6 rounded-lg border-2 border-dashed border-primary/50 shadow-lg inline-block w-full max-w-md">
+              <div className="text-center space-y-4">
+                  <Logo className="h-10 w-auto mx-auto"/>
+                  <p className="text-muted-foreground">Parabéns! Guarde seus números da sorte.</p>
+                  <p className="text-2xl font-bold text-primary">{state.fullName}</p>
+                  <div className="bg-primary/10 border border-primary/20 rounded-md px-4 py-3 space-y-2">
+                      <p className="text-sm font-semibold text-primary">Seus Números da Sorte:</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                        {state.coupons?.map(coupon => (
+                          <p key={coupon} className="text-2xl font-bold tracking-wider text-foreground">{coupon}</p>
+                        ))}
+                      </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground pt-2">Boa Sorte no sorteio! 🍀</p>
+              </div>
+          </div>
 
-            <div ref={couponContainerRef} className="bg-gradient-to-br from-background to-secondary/50 p-6 rounded-lg border-2 border-dashed border-primary/50 shadow-lg inline-block w-full max-w-md">
-                <div className="text-center space-y-4">
-                    <Logo className="h-10 w-auto mx-auto"/>
-                    <p className="text-muted-foreground">Parabéns! Guarde seus números da sorte.</p>
-                    <p className="text-2xl font-bold text-primary">{state.fullName}</p>
-                    <div className="bg-primary/10 border border-primary/20 rounded-md px-4 py-3 space-y-2">
-                        <p className="text-sm font-semibold text-primary">Seus Números da Sorte:</p>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                          {state.coupons.map(coupon => (
-                            <p key={coupon} className="text-2xl font-bold tracking-wider text-foreground">{coupon}</p>
-                          ))}
-                        </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground pt-2">Boa Sorte no sorteio! 🍀</p>
-                </div>
-            </div>
-
-            <Button onClick={handleSaveCoupon} className="mt-6 w-full max-w-xs mx-auto">
+          <div className="mt-6 flex flex-col items-center gap-4">
+            <Button onClick={handleSaveCoupon} className="w-full max-w-xs mx-auto">
                 Salvar Imagem
                 <Download className="ml-2 h-4 w-4" />
             </Button>
+            <Button variant="outline" onClick={() => { setShowSuccess(false); setState(initialState); }} className="w-full max-w-xs mx-auto">
+                Registrar Novo Cupom
+            </Button>
+          </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <form
+        ref={formRef}
+        action={generateCouponAction}
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          generateCouponAction(new FormData(e.currentTarget));
+        }}
+      >
+        <div>
+          <Label htmlFor="nome">Nome Completo</Label>
+          <Input id="nome" name="nome" placeholder="Seu nome completo" required />
         </div>
-      )}
+        <div>
+          <Label htmlFor="cpf">CPF</Label>
+          <Input
+            id="cpf"
+            name="cpf"
+            placeholder="Apenas números"
+            required
+            maxLength={11}
+            pattern="\d{11}"
+          />
+        </div>
+        <div>
+          <Label htmlFor="numeroCompra">Número da Compra</Label>
+          <Input id="numeroCompra" name="numeroCompra" placeholder="Ex: 123456" required />
+          <p className="text-xs text-muted-foreground mt-1">Este número deve ser o mesmo da nota fiscal para validação na loja.</p>
+        </div>
+        <div>
+          <Label htmlFor="valorCompra">Valor da Compra (R$)</Label>
+          <Input id="valorCompra" name="valorCompra" placeholder="Ex: 250,50" required inputMode="decimal" />
+        </div>
+        <SubmitButton />
+      </form>
     </div>
   );
 }
-
-    
