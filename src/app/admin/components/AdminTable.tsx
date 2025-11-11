@@ -27,7 +27,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Loader2, Trash2 } from 'lucide-react';
@@ -116,7 +116,7 @@ export function AdminTable() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <CardTitle>Total de Cupons: {coupons?.length ?? 0}</CardTitle>
           <CardDescription>
@@ -125,7 +125,7 @@ export function AdminTable() {
         </div>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" disabled={isLoading || !coupons || coupons.length === 0 || !!isDeleting}>
+            <Button variant="destructive" disabled={isLoading || !coupons || coupons.length === 0 || !!isDeleting} className="w-full md:w-auto">
               {isDeleting === true ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4" />}
               {isDeleting === true ? 'Excluindo...' : 'Excluir Todos'}
             </Button>

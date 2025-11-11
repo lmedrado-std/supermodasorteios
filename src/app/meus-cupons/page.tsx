@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   collection,
   query,
@@ -179,7 +179,7 @@ function MeusCuponsPage() {
                                 <div className="border-t-2 border-dashed w-full"></div>
 
                                 {/* Purchase Info */}
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-left">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm text-left">
                                     <div className="flex items-center gap-2">
                                         <DollarSign className="h-4 w-4 text-muted-foreground"/>
                                         <div>

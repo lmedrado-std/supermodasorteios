@@ -65,7 +65,7 @@ export function CountdownTimer() {
   if (isLoading || !isClient) {
     return (
         <div className="h-28 flex items-center justify-center">
-            <div className="animate-pulse flex space-x-4">
+            <div className="animate-pulse flex space-x-2 sm:space-x-4">
                 <div className="rounded-md bg-muted h-16 w-16"></div>
                 <div className="rounded-md bg-muted h-16 w-16"></div>
                 <div className="rounded-md bg-muted h-16 w-16"></div>
@@ -88,8 +88,8 @@ export function CountdownTimer() {
   }
 
   const TimeBox = ({ value, label }: { value: number; label: string }) => (
-    <div className="flex flex-col items-center justify-center bg-primary text-primary-foreground rounded-lg p-3 md:p-4 shadow-lg min-w-[60px] md:min-w-[70px]">
-      <span className="text-2xl md:text-3xl font-bold tracking-tight">
+    <div className="flex flex-col items-center justify-center bg-primary text-primary-foreground rounded-lg p-2 sm:p-3 md:p-4 shadow-lg min-w-[50px] sm:min-w-[60px] md:min-w-[70px]">
+      <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
         {String(value).padStart(2, '0')}
       </span>
       <span className="text-xs uppercase">{label}</span>

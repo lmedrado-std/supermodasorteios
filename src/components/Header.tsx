@@ -17,12 +17,12 @@ export function Header() {
           <Logo className="h-10 md:h-12 w-auto" />
         </Link>
         
-        <nav className="flex items-center gap-4 text-sm md:text-base text-muted-foreground">
-          <Link href="/" className="hover:text-primary hover:underline">
+        <nav className="flex items-center gap-2 md:gap-4 text-sm md:text-base text-muted-foreground">
+          <Link href="/" className="hover:text-primary hover:underline px-2">
             Início
           </Link>
-          <Link href="/meus-cupons" className="hover:text-primary hover:underline">
-            Meus Cupons
+          <Link href="/meus-cupons" className="hover:text-primary hover:underline px-2">
+            Cupons
           </Link>
           <TooltipProvider>
             <Tooltip>

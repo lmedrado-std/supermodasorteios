@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -351,7 +351,7 @@ export function RegistrationForm() {
                     <div className="border-t-2 border-dashed w-full"></div>
 
                     {/* Purchase Info */}
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-left">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm text-left">
                         <div className="flex items-center gap-2">
                             <DollarSign className="h-4 w-4 text-muted-foreground"/>
                             <div>

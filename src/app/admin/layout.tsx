@@ -72,12 +72,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               Painel Administrativo
             </h1>
           </div>
-          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
-              <Link href="/" className="hover:text-primary hover:underline">
+          <nav className="flex items-center gap-2 md:gap-4 text-sm text-muted-foreground">
+              <Link href="/" className="hover:text-primary hover:underline px-2">
                 Início
               </Link>
-              <Link href="/meus-cupons" className="hover:text-primary hover:underline">
-                Meus Cupons
+              <Link href="/meus-cupons" className="hover:text-primary hover:underline px-2">
+                Cupons
               </Link>
           </nav>
           <AdminMenu user={user} auth={auth} onLogout={handleLogout} />

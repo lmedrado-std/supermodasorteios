@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import {
   collection,
@@ -97,7 +97,7 @@ export function RaffleManager() {
       };
       
       const winnersRef = collection(firestore, 'winners');
-      const newWinnerDoc = await addDoc(winnersRef, winnerData);
+      await addDoc(winnersRef, winnerData);
 
       toast({
         title: 'Sorteio Realizado!',

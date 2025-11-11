@@ -192,5 +192,3 @@ export function SettingsManager() {
     </Card>
   );
 }
-
-    
