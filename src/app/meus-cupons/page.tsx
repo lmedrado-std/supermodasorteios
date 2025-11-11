@@ -20,10 +20,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search, Download, Calendar, ShoppingCart, DollarSign, Clock } from 'lucide-react';
+import { Search, Download, Calendar, ShoppingCart, DollarSign, Clock, List } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { CouponListModal } from '@/components/CouponListModal';
 
 type Coupon = {
   id: string;
@@ -166,10 +167,12 @@ function MeusCuponsPage() {
                                     <div className="text-center">
                                         <p className="font-bold mb-2">Seus Cupons (Total: {couponsCount})</p>
                                         {showCouponRange ? (
-                                            <div className="border rounded-md p-3 text-center bg-muted/50">
+                                             <div className="border rounded-md p-3 text-center bg-muted/50">
                                                 <p className="font-bold text-sm">
-                                                   Você gerou {couponsCount} cupons, do {coupons[0].couponNumber} ao {coupons[couponsCount - 1].couponNumber}.
+                                                   🎟️ Você possui {couponsCount} cupons!
                                                 </p>
+                                                <p className="font-semibold text-sm text-primary">{coupons[0].couponNumber} a {coupons[couponsCount - 1].couponNumber}</p>
+                                                <CouponListModal coupons={coupons.map(c => c.couponNumber)} />
                                             </div>
                                         ) : (
                                             <ScrollArea className="h-28 w-full rounded-md border p-4">

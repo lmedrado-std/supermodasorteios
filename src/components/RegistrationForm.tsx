@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { CheckCircle2, Download, Ticket, Info, Calendar, ShoppingCart, DollarSign, Clock } from 'lucide-react';
+import { CheckCircle2, Download, Ticket, Info, Calendar, ShoppingCart, DollarSign, Clock, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   collection,
@@ -27,6 +27,7 @@ import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from './ui/scroll-area';
 import { Checkbox } from './ui/checkbox';
+import { CouponListModal } from './CouponListModal';
 
 const initialState: {
   message: string | null;
@@ -341,8 +342,10 @@ export function RegistrationForm() {
                             {showCouponRange ? (
                                 <div className="border rounded-md p-3 text-center bg-muted/50">
                                     <p className="font-bold text-sm">
-                                        Você gerou {couponsCount} cupons, do {state.coupons?.[0]} ao {state.coupons?.[couponsCount - 1]}.
+                                       🎟️ Você gerou {couponsCount} cupons nesta compra!
                                     </p>
+                                    <p className="font-semibold text-sm text-primary">{state.coupons?.[0]} a {state.coupons?.[couponsCount - 1]}</p>
+                                    <CouponListModal coupons={state.coupons ?? []} />
                                 </div>
                             ) : (
                                 <ScrollArea className="h-28 w-full rounded-md border p-4">
