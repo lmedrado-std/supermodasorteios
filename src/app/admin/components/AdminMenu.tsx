@@ -17,11 +17,21 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MoreVertical, LogOut, KeyRound, Eye, EyeOff } from 'lucide-react';
-import { Auth, User, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { Auth, User, updatePassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 
 interface AdminMenuProps {
@@ -32,19 +42,20 @@ interface AdminMenuProps {
 
 export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
   
   const resetState = () => {
-    setCurrentPassword('');
     setNewPassword('');
+    setConfirmPassword('');
     setIsUpdating(false);
-    setShowCurrentPassword(false);
     setShowNewPassword(false);
+    setShowConfirmPassword(false);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -54,11 +65,11 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const currentUser = auth.currentUser; // Use a fresh instance of the user
+  const handlePasswordUpdate = async () => {
+    setIsAlertOpen(false); // Fecha o alerta
+    const currentUser = auth.currentUser;
 
-    if (!currentUser || !currentUser.email) {
+    if (!currentUser) {
        toast({
             variant: 'destructive',
             title: 'Erro de Autenticação',
@@ -67,29 +78,9 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
       return;
     }
 
-    if (newPassword.length < 6) {
-        toast({
-            variant: 'destructive',
-            title: 'Senha muito curta',
-            description: 'A nova senha deve ter no mínimo 6 caracteres.',
-        });
-        return;
-    }
-    
-    if (currentPassword === newPassword) {
-        toast({
-            variant: 'destructive',
-            title: 'Senha inválida',
-            description: 'A nova senha deve ser diferente da senha atual.',
-        });
-        return;
-    }
-
     setIsUpdating(true);
     
     try {
-        const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
-        await reauthenticateWithCredential(currentUser, credential);
         await updatePassword(currentUser, newPassword);
 
         toast({
@@ -100,12 +91,10 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
 
     } catch (error: any) {
       let description = 'Ocorreu um erro. Tente novamente.';
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        description = 'A senha atual está incorreta.';
-      } else if (error.code === 'auth/too-many-requests') {
-        description = 'Muitas tentativas. Tente novamente mais tarde.';
-      } else if (error.code === 'auth/user-mismatch') {
-        description = 'Houve um problema com sua sessão. Tente fazer login novamente.';
+       if (error.code === 'auth/requires-recent-login') {
+        description = 'Esta operação é sensível e requer autenticação recente. Por favor, faça login novamente antes de tentar alterar a senha.';
+      } else if (error.code === 'auth/weak-password') {
+        description = 'A senha fornecida é muito fraca.';
       }
       toast({
         variant: 'destructive',
@@ -115,6 +104,29 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
     } finally {
       setIsUpdating(false);
     }
+  };
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+        toast({
+            variant: 'destructive',
+            title: 'Senha muito curta',
+            description: 'A nova senha deve ter no mínimo 6 caracteres.',
+        });
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        toast({
+            variant: 'destructive',
+            title: 'Senhas não coincidem',
+            description: 'Os campos de nova senha e confirmação devem ser iguais.',
+        });
+        return;
+    }
+
+    setIsAlertOpen(true); // Abre o alerta de confirmação
   };
 
   return (
@@ -145,36 +157,12 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
           <DialogHeader>
             <DialogTitle>Alterar Senha</DialogTitle>
             <DialogDescription>
-              Digite sua senha atual e a nova senha desejada.
+              Digite a nova senha e confirme. A senha deve ter no mínimo 6 caracteres.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleChangePassword}>
+          <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">
-                  Senha Atual
-                </Label>
-                <div className="relative">
-                    <Input
-                    id="current-password"
-                    type={showCurrentPassword ? "text" : "password"}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                    />
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute inset-y-0 right-0 h-full px-3"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    >
-                        {showCurrentPassword ? <EyeOff /> : <Eye />}
-                        <span className="sr-only">{showCurrentPassword ? 'Ocultar' : 'Mostrar'} senha</span>
-                    </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <Label htmlFor="new-password">
                   Nova Senha
                 </Label>
@@ -198,6 +186,30 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
                     </Button>
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">
+                  Confirmar Nova Senha
+                </Label>
+                 <div className="relative">
+                    <Input
+                        id="confirm-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                    />
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute inset-y-0 right-0 h-full px-3"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                        {showConfirmPassword ? <EyeOff /> : <Eye />}
+                         <span className="sr-only">{showConfirmPassword ? 'Ocultar' : 'Mostrar'} senha</span>
+                    </Button>
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>
@@ -210,6 +222,23 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
           </form>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação irá alterar sua senha de acesso ao painel administrativo. Você confirma esta alteração?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handlePasswordUpdate}>Sim, Alterar Senha</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </>
   );
 }
+
+    
