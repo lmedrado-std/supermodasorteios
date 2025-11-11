@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import AdminMenu from './components/AdminMenu';
 import { RaffleManager } from './components/RaffleManager';
+import { WinnerHistory } from './components/WinnerHistory';
 
 export default function AdminPage() {
   const { user, isUserLoading } = useUser();
@@ -87,6 +88,7 @@ export default function AdminPage() {
           <div className="lg:col-span-2 space-y-8">
              <SettingsManager />
              <RaffleManager />
+             <WinnerHistory />
           </div>
           <div className="lg:col-span-1">
             {/* Você pode adicionar outros cards ou informações aqui no futuro */}

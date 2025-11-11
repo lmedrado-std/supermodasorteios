@@ -11,6 +11,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { FirebaseClientProvider } from '@/firebase';
+import { CountdownTimer } from '@/components/CountdownTimer';
 
 export default function Home() {
   return (
@@ -24,7 +25,10 @@ export default function Home() {
                 <CardTitle className="text-2xl md:text-3xl font-bold text-center text-primary">
                   Participe do Sorteio!
                 </CardTitle>
-                <CardDescription className="text-center pt-2">
+                <div className="pt-4">
+                  <CountdownTimer />
+                </div>
+                <CardDescription className="text-center pt-4">
                   Preencha seus dados para gerar seu número da sorte.
                 </CardDescription>
               </CardHeader>

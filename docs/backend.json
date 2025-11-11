@@ -91,20 +91,24 @@
           "type": "string",
           "format": "date-time",
           "description": "The end date of the campaign."
-        },
-        "winner": {
-            "type": "object",
-            "description": "Information about the raffle winner.",
-            "properties": {
-                "couponId": { "type": "string" },
-                "couponNumber": { "type": "string" },
-                "fullName": { "type": "string" },
-                "cpf": { "type": "string" },
-                "drawDate": { "type": "string", "format": "date-time" }
-            }
         }
       },
       "required": ["valuePerCoupon"]
+    },
+    "Winner": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Winner",
+        "type": "object",
+        "description": "Represents a raffle winner.",
+        "properties": {
+            "id": { "type": "string" },
+            "couponId": { "type": "string" },
+            "couponNumber": { "type": "string" },
+            "fullName": { "type": "string" },
+            "cpf": { "type": "string" },
+            "drawDate": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "couponId", "couponNumber", "fullName", "cpf", "drawDate"]
     }
   },
   "auth": {
@@ -155,6 +159,20 @@
                 "$ref": "#/backend/entities/RaffleSettings"
             },
             "description": "Stores application settings for the raffle."
+        }
+      },
+      {
+        "path": "/winners/{winnerId}",
+        "definition": {
+            "entityName": "Winner",
+            "schema": {
+                "$ref": "#/backend/entities/Winner"
+            },
+            "description": "Stores a historical record of all raffle winners.",
+            "params": [{
+                "name": "winnerId",
+                "description": "Unique ID for the winner record."
+            }]
         }
       }
     ],

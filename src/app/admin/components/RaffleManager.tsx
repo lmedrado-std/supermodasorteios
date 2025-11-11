@@ -1,12 +1,14 @@
 'use client';
-import { useState } from 'react';
-import { useFirestore, useMemoFirebase } from '@/firebase';
+import { useState, useEffect } from 'react';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import {
   collection,
   doc,
   getDocs,
-  setDoc,
-  getDoc,
+  addDoc,
+  query,
+  orderBy,
+  limit,
 } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +20,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PartyPopper, Ticket, User } from 'lucide-react';
+import { Loader2, PartyPopper, Ticket, User, Trophy } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { format } from 'date-fns';
 
 type Coupon = {
   id: string;
@@ -39,18 +42,29 @@ type Coupon = {
 };
 
 type WinnerInfo = {
+  id: string;
   couponId: string;
   couponNumber: string;
   fullName: string;
   cpf: string;
-  drawDate: string;
+  drawDate: {
+    seconds: number;
+    nanoseconds: number;
+  };
 };
 
 export function RaffleManager() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isDrawing, setIsDrawing] = useState(false);
-  const [winner, setWinner] = useState<WinnerInfo | null>(null);
+  
+  const lastWinnerQuery = useMemoFirebase(
+    () => firestore ? query(collection(firestore, 'winners'), orderBy('drawDate', 'desc'), limit(1)) : null,
+    [firestore]
+  );
+  
+  const { data: lastWinnerArr, isLoading: isWinnerLoading } = useCollection<WinnerInfo>(lastWinnerQuery);
+  const lastWinner = lastWinnerArr?.[0];
 
   const handleDraw = async () => {
     if (!firestore) return;
@@ -66,6 +80,7 @@ export function RaffleManager() {
           title: 'Sorteio não realizado',
           description: 'Não há cupons cadastrados para sortear.',
         });
+        setIsDrawing(false);
         return;
       }
 
@@ -73,18 +88,17 @@ export function RaffleManager() {
       const randomIndex = Math.floor(Math.random() * allCoupons.length);
       const drawnCoupon = allCoupons[randomIndex];
 
-      const winnerData: WinnerInfo = {
+      const winnerData = {
         couponId: drawnCoupon.id,
         couponNumber: drawnCoupon.couponNumber,
         fullName: drawnCoupon.fullName,
         cpf: drawnCoupon.cpf,
-        drawDate: new Date().toISOString(),
+        drawDate: new Date(),
       };
       
-      const settingsRef = doc(firestore, 'settings/raffle');
-      await setDoc(settingsRef, { winner: winnerData }, { merge: true });
+      const winnersRef = collection(firestore, 'winners');
+      const newWinnerDoc = await addDoc(winnersRef, winnerData);
 
-      setWinner(winnerData);
       toast({
         title: 'Sorteio Realizado!',
         description: `O cupom ${winnerData.couponNumber} é o vencedor!`,
@@ -102,41 +116,32 @@ export function RaffleManager() {
     }
   };
 
-  const fetchWinner = async () => {
-    if (!firestore) return;
-    const settingsRef = doc(firestore, 'settings/raffle');
-    const settingsDoc = await getDoc(settingsRef);
-    if (settingsDoc.exists() && settingsDoc.data().winner) {
-      setWinner(settingsDoc.data().winner as WinnerInfo);
-    }
-  };
-
-  useState(() => {
-    fetchWinner();
-  });
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Realizar Sorteio</CardTitle>
         <CardDescription>
           Clique no botão para sortear um cupom vencedor dentre todos os
-          cadastrados.
+          cadastrados. O resultado será salvo no histórico.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex items-center justify-center p-6">
-        {winner ? (
+      <CardContent className="flex items-center justify-center p-6 min-h-[250px]">
+        {isWinnerLoading ? (
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        ) : lastWinner ? (
           <div className="text-center animate-in fade-in-50">
-             <PartyPopper className="h-12 w-12 mx-auto text-yellow-500" />
-             <h3 className="text-lg font-semibold mt-4">Temos um Vencedor!</h3>
+             <Trophy className="h-12 w-12 mx-auto text-amber-500" />
+             <h3 className="text-lg font-semibold mt-4">Último Ganhador Sorteado</h3>
              <div className="mt-4 p-4 bg-primary/10 rounded-lg border-2 border-dashed border-primary">
-                <p className="text-2xl font-bold text-primary tracking-wider">{winner.couponNumber}</p>
+                <p className="text-2xl font-bold text-primary tracking-wider">{lastWinner.couponNumber}</p>
                 <div className="mt-2 text-left space-y-1 text-sm">
-                    <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground"/> <strong>Nome:</strong> {winner.fullName}</p>
-                    <p className="flex items-center gap-2"><Ticket className="h-4 w-4 text-muted-foreground"/> <strong>CPF:</strong> {winner.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</p>
+                    <p className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground"/> <strong>Nome:</strong> {lastWinner.fullName}</p>
+                    <p className="flex items-center gap-2"><Ticket className="h-4 w-4 text-muted-foreground"/> <strong>CPF:</strong> {lastWinner.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</p>
                 </div>
              </div>
-             <p className="text-xs text-muted-foreground mt-2">Sorteio realizado em: {new Date(winner.drawDate).toLocaleString('pt-BR')}</p>
+             <p className="text-xs text-muted-foreground mt-2">
+                Sorteio realizado em: {format(new Date(lastWinner.drawDate.seconds * 1000), 'dd/MM/yyyy HH:mm')}
+             </p>
           </div>
         ) : (
           <p className="text-muted-foreground">Nenhum sorteio realizado ainda.</p>
@@ -149,17 +154,16 @@ export function RaffleManager() {
               {isDrawing ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Ticket className="mr-2 h-4 w-4" />
+                <PartyPopper className="mr-2 h-4 w-4" />
               )}
-              {isDrawing ? 'Sorteando...' : (winner ? 'Sortear Novamente' : 'Sortear Agora')}
+              {isDrawing ? 'Sorteando...' : 'Sortear Novo Ganhador'}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
               <AlertDialogDescription>
-                {winner ? 'Esta ação irá realizar um novo sorteio e substituir o ganhador atual. ' : 'Esta ação irá realizar o sorteio do cupom vencedor. '} 
-                A ação não pode ser desfeita.
+                Esta ação irá realizar um novo sorteio e registrar o resultado no histórico de vencedores. A ação não pode ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

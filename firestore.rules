@@ -8,11 +8,6 @@
  * - `/coupons/{couponId}`: Stores individual raffle coupon data.
  * - `/roles_admin/{adminUserId}`: Presence of a document grants admin privileges to the corresponding user.
  * - `/settings/raffle`: Stores application settings, like value per coupon.
- *
- * Key Security Decisions:
- * - Public read access to coupons and settings is allowed.
- * - Admin privileges are determined by the existence of a document in the `/roles_admin` collection.
- * - Data validation is relaxed for prototyping, but authorization checks are strict.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -53,6 +48,16 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow get, list: if true;
       allow write: if isAdmin();
+    }
+
+    /**
+     * @description Secures winner history. Public can read, only admins can create.
+     * @path /winners/{winnerId}
+     */
+    match /winners/{winnerId} {
+        allow get, list: if true;
+        allow create: if isAdmin();
+        allow update, delete: if false;
     }
 
     // Helper functions
