@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,10 +36,30 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
   const [newPassword, setNewPassword] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
+  
+  const resetState = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setIsUpdating(false);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      resetState();
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !user.email) return;
+    if (!user || !user.email) {
+       toast({
+            variant: 'destructive',
+            title: 'Erro de Autenticação',
+            description: 'Usuário não encontrado.',
+        });
+      return;
+    }
 
     if (newPassword.length < 6) {
         toast({
@@ -48,28 +69,33 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
         });
         return;
     }
+    
+    if (currentPassword === newPassword) {
+        toast({
+            variant: 'destructive',
+            title: 'Senha inválida',
+            description: 'A nova senha deve ser diferente da senha atual.',
+        });
+        return;
+    }
+
 
     setIsUpdating(true);
     
     try {
-        // Reautenticar o usuário é necessário para operações sensíveis como mudar a senha
         const credential = EmailAuthProvider.credential(user.email, currentPassword);
         await reauthenticateWithCredential(user, credential);
-        
-        // Se a reautenticação for bem-sucedida, atualize a senha
         await updatePassword(user, newPassword);
 
         toast({
             title: 'Sucesso!',
             description: 'Sua senha foi alterada.',
         });
-        setIsDialogOpen(false);
-        setCurrentPassword('');
-        setNewPassword('');
+        handleOpenChange(false);
 
     } catch (error: any) {
       let description = 'Ocorreu um erro. Tente novamente.';
-      if (error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         description = 'A senha atual está incorreta.';
       } else if (error.code === 'auth/too-many-requests') {
         description = 'Muitas tentativas. Tente novamente mais tarde.';
@@ -96,7 +122,7 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Menu</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setIsDialogOpen(true)}>
+          <DropdownMenuItem onSelect={() => handleOpenChange(true)}>
             <KeyRound className="mr-2 h-4 w-4" />
             <span>Alterar Senha</span>
           </DropdownMenuItem>
@@ -107,7 +133,7 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Alterar Senha</DialogTitle>
@@ -145,6 +171,9 @@ export default function AdminMenu({ user, auth, onLogout }: AdminMenuProps) {
               </div>
             </div>
             <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">Cancelar</Button>
+              </DialogClose>
               <Button type="submit" disabled={isUpdating}>
                 {isUpdating ? 'Salvando...' : 'Salvar Alterações'}
               </Button>
