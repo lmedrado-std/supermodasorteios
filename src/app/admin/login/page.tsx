@@ -5,7 +5,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,6 +58,15 @@ export default function LoginPage() {
       if (error.code === 'auth/user-not-found') {
         // 2. Se o usuário não existe, cria o usuário e a role de admin
         try {
+           if (password.length < 6) {
+             toast({
+                variant: 'destructive',
+                title: 'Senha muito curta',
+                description: 'A senha para o novo admin deve ter no mínimo 6 caracteres.',
+            });
+            return;
+          }
+
           const userCredential = await createUserWithEmailAndPassword(
             auth,
             adminEmail,
@@ -78,21 +87,27 @@ export default function LoginPage() {
           });
           // O login é feito automaticamente após a criação, o useEffect redirecionará
         } catch (creationError: any) {
-          toast({
+           let creationErrorMessage = 'Não foi possível criar o usuário administrador.';
+           if (creationError.code === 'auth/weak-password') {
+             creationErrorMessage = 'A senha é muito fraca. Use pelo menos 6 caracteres.';
+           } else if (creationError.code === 'auth/email-already-in-use') {
+              creationErrorMessage = 'Este e-mail já está em uso por outro processo.';
+           }
+           toast({
             variant: 'destructive',
             title: 'Erro ao Criar Admin',
-            description:
-              creationError.message ||
-              'Não foi possível criar o usuário administrador.',
+            description: creationErrorMessage,
           });
         }
       } else {
         // 3. Se for outro erro (senha errada, etc.)
-        let errorMessage = 'Ocorreu um erro desconhecido.';
-        if (error.code === 'auth/wrong-password') {
+        let errorMessage = 'Ocorreu um erro desconhecido. Verifique sua conexão.';
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
             errorMessage = 'A senha está incorreta.';
         } else if (error.code === 'auth/too-many-requests') {
             errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
+        } else if (error.code === 'auth/network-request-failed') {
+            errorMessage = 'Erro de rede. Verifique sua conexão com a internet.';
         }
         toast({
           variant: 'destructive',
