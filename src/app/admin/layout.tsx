@@ -15,17 +15,27 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (isUserLoading) return; // Wait for user loading to complete
+    // Aguarda o fim do carregamento do usuário
+    if (isUserLoading) return; 
+
+    // Se não houver usuário, redireciona para o login
     if (!user) {
       router.push('/admin/login');
-    } else if (firestore && auth) {
+      return;
+    }
+
+    // Se o usuário estiver logado e os serviços do Firebase estiverem prontos,
+    // verifica se ele tem a permissão de administrador.
+    if (user && firestore && auth) {
       const checkAdmin = async () => {
         try {
           const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
           const adminDoc = await getDoc(adminRoleRef);
+          
+          // Se o documento de admin não existir, o usuário não tem permissão.
           if (!adminDoc.exists()) {
-            await signOut(auth);
-            router.push('/admin/login');
+            await signOut(auth); // Desloga o usuário por segurança
+            router.push('/admin/login'); // Redireciona para o login
           }
         } catch (error) {
           console.error("Error checking admin status:", error);
@@ -33,6 +43,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           router.push('/admin/login');
         }
       };
+      
       checkAdmin();
     }
   }, [user, isUserLoading, firestore, auth, router]);
