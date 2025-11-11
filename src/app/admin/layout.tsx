@@ -1,6 +1,6 @@
 'use client';
 import { useUser, FirebaseClientProvider } from '@/firebase';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -8,44 +8,54 @@ import { useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import AdminMenu from './components/AdminMenu';
 import { Logo } from '@/components/Logo';
+import { Loader2 } from 'lucide-react';
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const { auth, firestore } = useFirebase();
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
   useEffect(() => {
-    // Aguarda o fim do carregamento do usuário
-    if (isUserLoading) return; 
+    // 1. Aguarda o fim do carregamento do usuário
+    if (isUserLoading) {
+      return;
+    }
 
-    // Se não houver usuário, redireciona para o login
+    // 2. Se não houver usuário, redireciona para o login
     if (!user) {
       router.push('/admin/login');
       return;
     }
 
-    // Se o usuário estiver logado e os serviços do Firebase estiverem prontos,
-    // verifica se ele tem a permissão de administrador.
-    if (user && firestore && auth) {
-      const checkAdmin = async () => {
-        try {
-          const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-          const adminDoc = await getDoc(adminRoleRef);
-          
-          // Se o documento de admin não existir, o usuário não tem permissão.
-          if (!adminDoc.exists()) {
-            await signOut(auth); // Desloga o usuário por segurança
-            router.push('/admin/login'); // Redireciona para o login
-          }
-        } catch (error) {
-          console.error("Error checking admin status:", error);
-          await signOut(auth);
-          router.push('/admin/login');
+    // 3. Se houver um usuário, verifica se ele é admin
+    const checkAdmin = async () => {
+      if (!firestore || !auth) return;
+
+      try {
+        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+        const adminDoc = await getDoc(adminRoleRef);
+
+        if (adminDoc.exists()) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+          await signOut(auth); // Desloga por segurança
+          router.push('/admin/login'); // Redireciona
         }
-      };
-      
-      checkAdmin();
-    }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        setIsAdmin(false);
+        await signOut(auth);
+        router.push('/admin/login');
+      } finally {
+        setIsCheckingAdmin(false);
+      }
+    };
+
+    checkAdmin();
+
   }, [user, isUserLoading, firestore, auth, router]);
 
   const handleLogout = async () => {
@@ -55,22 +65,30 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (isUserLoading || !user) {
+  // Estado de carregamento principal enquanto verifica auth e permissões
+  if (isUserLoading || isCheckingAdmin || isAdmin === null) {
+    let message = "Verificando autenticação...";
+    if (!isUserLoading && isCheckingAdmin) {
+      message = "Verificando permissões...";
+    }
     return (
-      <div className="flex justify-center items-center h-screen">
-        Carregando...
+      <div className="flex flex-col justify-center items-center h-screen gap-4">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p>{message}</p>
       </div>
     );
   }
 
-  if (!auth || !firestore) {
+  // Se a verificação terminou e o usuário não é admin (embora o useEffect já deva ter redirecionado)
+  if (!isAdmin) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Conectando aos serviços...
+       <div className="flex flex-col justify-center items-center h-screen gap-4">
+         <p>Acesso negado. Redirecionando para o login...</p>
       </div>
     );
   }
 
+  // Se tudo estiver OK, exibe o layout do admin
   return (
     <div className="min-h-screen bg-muted/40">
       <header className="bg-background shadow-sm sticky top-0 z-50">
@@ -94,7 +112,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 Regulamento
               </Link>
           </nav>
-          <AdminMenu user={user} auth={auth} onLogout={handleLogout} />
+          {user && auth && <AdminMenu user={user} auth={auth} onLogout={handleLogout} />}
         </div>
       </header>
       <main className="container mx-auto px-4 py-8">
