@@ -108,9 +108,6 @@ export default function RegulamentoPage() {
                     <p className="mt-2">
                         Em caso de dúvidas, entre em contato pelo WhatsApp da loja ou pelas redes sociais oficiais da Supermoda.
                     </p>
-                    <p className="flex items-center gap-2 mt-2">
-                       <Instagram className="h-4 w-4" /> Instagram: [insira o @ do seu instagram aqui]
-                    </p>
                 </div>
 
                 <div className="text-center pt-6">
