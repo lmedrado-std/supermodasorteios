@@ -103,7 +103,7 @@ export function RaffleDraw() {
       setGlow(Math.sin(glowPhase * Math.PI) * 30);
 
       // Atualiza número aleatório rapidamente
-      if (elapsed % 80 < 17) { // roughly every 80ms to reduce updates
+      if (elapsed % 80 === 0) { // roughly every 80ms to reduce updates
         const randomNumber = Math.floor(Math.random() * 99999) + 1;
         setDisplayedNumber(`SM-${String(randomNumber).padStart(5, '0')}`);
       }
@@ -221,16 +221,6 @@ export function RaffleDraw() {
                 <div className="text-left">
                   <p className="text-xs text-muted-foreground">Nome</p>
                   <p className="font-bold text-gray-900">{winnerInfo.fullName}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg hover:shadow-md transition">
-                <Ticket className="h-5 w-5 text-green-600 flex-shrink-0" />
-                <div className="text-left">
-                  <p className="text-xs text-muted-foreground">CPF</p>
-                  <p className="font-bold text-gray-900">
-                    {winnerInfo.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
-                  </p>
                 </div>
               </div>
 
