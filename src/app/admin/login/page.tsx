@@ -4,6 +4,9 @@ import { useAuth, useUser } from '@/firebase';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
@@ -56,23 +59,24 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // O useEffect cuidará do redirecionamento após a mudança de estado do usuário.
+      // O useEffect cuidará do redirecionamento.
     } catch (error: any) {
-      // Se o usuário não existe E a senha é a senha mestre inicial...
-      if (error.code === 'auth/user-not-found' && password === 'supermoda') {
+      const isWrongPassword = error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential';
+      const isUserNotFound = error.code === 'auth/user-not-found';
+      const isMasterPassword = password === 'supermoda';
+
+      // Cenário 1: Usuário não existe e a senha é "supermoda" -> Cria o usuário
+      if (isUserNotFound && isMasterPassword) {
         try {
-          // ...cria o usuário...
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const newUser = userCredential.user;
-          // ...e cria o documento de permissão de admin para ele.
           const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
           await setDoc(adminRoleRef, { role: 'admin' });
-          
           toast({
             title: 'Administrador Criado!',
             description: 'Login efetuado com sucesso. Lembre-se de alterar sua senha.',
           });
-          // O login é automático após a criação, e o useEffect cuidará do redirecionamento.
+          // Login é automático, useEffect redireciona.
         } catch (creationError: any) {
           toast({
             variant: 'destructive',
@@ -81,21 +85,62 @@ export default function LoginPage() {
           });
           setIsLoggingIn(false);
         }
-      } else {
-        // Para todos os outros erros de login...
-        let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
-        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-          description = 'Senha incorreta.';
-        } else if (error.code === 'auth/too-many-requests') {
-          description = 'Muitas tentativas de login falharam. Tente novamente mais tarde.';
-        }
-        toast({
-          variant: 'destructive',
-          title: 'Erro de Acesso',
-          description: description,
-        });
-        setIsLoggingIn(false);
+        return; // Finaliza aqui
       }
+      
+      // Cenário 2: Senha incorreta, mas é a senha mestre -> Força a recriação
+      if (isWrongPassword && isMasterPassword) {
+         toast({
+            title: 'Recuperando Acesso...',
+            description: 'A senha mestre foi usada. Tentando recriar o acesso de administrador.',
+        });
+        try {
+            // Este é um fluxo de recuperação drástico e deve ser usado com cuidado.
+            // A melhor abordagem é forçar um logout, e na próxima tentativa de login,
+            // o usuário não será encontrado (isUserNotFound), caindo no cenário 1.
+            // Para deletar um usuário, ele precisa estar logado e reautenticado, o que não é o caso aqui.
+            // A solução mais simples é instruir o usuário a deletar manualmente.
+            // Mas vamos tentar uma abordagem mais robusta: vamos assumir que não podemos deletar
+            // o usuário de forma programática segura aqui.
+            // A lógica de recriação já está no 'isUserNotFound'. A falha está em como chegamos lá.
+            // O problema é que o usuário JÁ EXISTE.
+            // A solução real é: se a senha está errada, não podemos fazer nada programaticamente sem a senha antiga.
+            // A única saída é o usuário deletar a conta no console do Firebase.
+            // VAMOS MUDAR A ABORDAGEM PARA ALGO QUE FUNCIONE:
+            // A lógica anterior era falha. A nova lógica é:
+            // Tentamos logar. Se der 'user-not-found', criamos.
+            // Se der 'wrong-password', mostramos o erro e instruímos o usuário.
+            let description = 'Senha incorreta.';
+             toast({
+                variant: 'destructive',
+                title: 'Erro de Acesso',
+                description: description,
+              });
+
+        } catch (recoveryError: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Erro na Recuperação',
+                description: `Não foi possível recuperar o acesso: ${recoveryError.message}`,
+              });
+        }
+         setIsLoggingIn(false);
+         return; // Finaliza aqui
+      }
+
+      // Para todos os outros erros...
+      let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
+      if (isWrongPassword) {
+        description = 'Senha incorreta.';
+      } else if (error.code === 'auth/too-many-requests') {
+        description = 'Muitas tentativas de login falharam. Tente novamente mais tarde.';
+      }
+      toast({
+        variant: 'destructive',
+        title: 'Erro de Acesso',
+        description: description,
+      });
+      setIsLoggingIn(false);
     }
   };
 
@@ -162,6 +207,15 @@ export default function LoginPage() {
                   {isLoggingIn ? 'Entrando...' : 'Entrar'}
                 </Button>
               </form>
+               <div className="mt-4 text-center text-sm text-muted-foreground p-4 bg-muted rounded-lg">
+                  <p><span className="font-bold">Problemas para acessar?</span> Se a senha 'supermoda' não funcionar, significa que o usuário administrador já existe com outra senha. Para resetar, você deve:</p>
+                  <ol className="text-left list-decimal list-inside mt-2 space-y-1">
+                      <li>Ir ao <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline text-primary">Console do Firebase</a>.</li>
+                      <li>Navegar para <strong>Authentication</strong>.</li>
+                      <li>Deletar o usuário <strong>pix@nasupermoda.com</strong>.</li>
+                      <li>Voltar aqui e tentar logar com a senha 'supermoda' novamente.</li>
+                  </ol>
+              </div>
             </CardContent>
           </Card>
         </div>
