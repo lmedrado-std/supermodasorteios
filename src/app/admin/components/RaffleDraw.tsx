@@ -32,7 +32,7 @@ type Coupon = {
   cpf: string;
   couponNumber: string;
   purchaseValue: number;
-  purchaseDate: Timestamp; // Alterado para Timestamp
+  purchaseDate: Timestamp;
 };
 
 type WinnerInfo = Coupon & { drawDate: Date };
@@ -54,16 +54,43 @@ export function RaffleDraw() {
   const { data: coupons, isLoading: isCouponsLoading } = useCollection(couponsQuery);
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+    let intervalId: NodeJS.Timeout | null = null;
 
     if (drawState === 'spinning') {
-      intervalId = setInterval(() => {
-        const randomNumber = Math.floor(Math.random() * 99999) + 1;
-        setDisplayedNumber(`SM-${String(randomNumber).padStart(5, '0')}`);
-      }, 80); // Efeito de giro rápido
+      const startTime = Date.now();
+      const totalDuration = 15000; // 15 segundos de suspense total
+      const slowdownTime = 12000; // Começa a desacelerar nos últimos 3 segundos
+
+      const spin = () => {
+        const elapsedTime = Date.now() - startTime;
+        let interval = 50; // Intervalo rápido inicial
+
+        if (elapsedTime > slowdownTime) {
+          // Desaceleração exponencial nos últimos segundos
+          const remainingTime = totalDuration - elapsedTime;
+          const progress = remainingTime / (totalDuration - slowdownTime);
+          interval = 50 + (400 * (1 - progress)); // Aumenta o intervalo para 450ms
+        }
+        
+        // Simula uma "falsa parada" perto do fim
+        if (elapsedTime > 13500 && elapsedTime < 14200) {
+            // Fica parado por um instante
+        } else {
+            const randomNumber = Math.floor(Math.random() * 99999) + 1;
+            setDisplayedNumber(`SM-${String(randomNumber).padStart(5, '0')}`);
+        }
+
+        if (elapsedTime < totalDuration) {
+          intervalId = setTimeout(spin, interval);
+        }
+      };
+
+      spin();
     }
 
-    return () => clearInterval(intervalId);
+    return () => {
+      if (intervalId) clearTimeout(intervalId);
+    };
   }, [drawState]);
 
 
@@ -87,34 +114,31 @@ export function RaffleDraw() {
       
       const allCoupons = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Coupon));
 
-      // Duração da animação de suspense
-      const spinDuration = 4000 + Math.random() * 2000; // 4-6 segundos de giro
+      const spinDuration = 15000; // 15 segundos de giro
 
       setTimeout(() => {
         const randomIndex = Math.floor(Math.random() * allCoupons.length);
         const drawnCoupon = allCoupons[randomIndex];
-        const drawDate = new Date(); // Captura a data/hora exata do sorteio
+        const drawDate = new Date();
         
-        setDisplayedNumber(drawnCoupon.couponNumber); // Mostra o número vencedor
+        setDisplayedNumber(drawnCoupon.couponNumber);
         setDrawState('revealing');
 
-        // Aguarda um momento para revelar os detalhes
         setTimeout(async () => {
           const winnerData: WinnerInfo = { ...drawnCoupon, drawDate };
           setWinner(winnerData);
           setDrawState('complete');
           
-          // Salva o ganhador no Firestore
           await addDoc(collection(firestore, 'winners'), {
-            ...drawnCoupon, // Salva todos os dados do cupom
-            drawDate: Timestamp.fromDate(drawDate), // Converte a data para o formato do Firestore
+            ...drawnCoupon,
+            drawDate: Timestamp.fromDate(drawDate),
           });
 
           toast({
             title: 'Sorteio Realizado!',
             description: `O cupom ${winnerData.couponNumber} é o vencedor!`,
           });
-        }, 1500); // 1.5 segundos para o tempo de revelação
+        }, 2000); // 2 segundos para o tempo de revelação
         
       }, spinDuration);
 
@@ -167,12 +191,12 @@ export function RaffleDraw() {
         )}
         {drawState === 'spinning' || drawState === 'revealing' ? (
              <div className="flex flex-col items-center gap-4">
-                <p className="font-bold text-muted-foreground">Sorteando...</p>
+                <p className="font-bold text-muted-foreground animate-pulse">Sorteando...</p>
                 <div className={`
                     text-5xl font-black tracking-wider p-4 rounded-lg
                     bg-gradient-to-r from-red-500 via-yellow-400 to-red-500 
-                    bg-[length:200%_200%] animate-gradient text-white transition-all duration-300
-                    ${drawState === 'revealing' ? 'scale-125' : ''}
+                    bg-[length:200%_200%] text-white transition-all duration-300
+                    ${drawState === 'revealing' ? 'animate-reveal' : 'animate-gradient-fast' }
                 `}>
                     {displayedNumber}
                 </div>
@@ -209,13 +233,22 @@ export function RaffleDraw() {
         </AlertDialog>
       </CardFooter>
       <style jsx>{`
-        @keyframes gradient {
+        @keyframes gradient-fast {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-        .animate-gradient {
-          animation: gradient 3s ease infinite;
+        .animate-gradient-fast {
+          animation: gradient-fast 1.5s ease infinite;
+        }
+        @keyframes reveal {
+          0% { transform: scale(1); box-shadow: 0 0 0px rgba(255, 255, 255, 0); }
+          50% { transform: scale(1.3); box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); }
+          100% { transform: scale(1.1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+        }
+        .animate-reveal {
+            transform: scale(1.1);
+            animation: reveal 1s ease-out forwards;
         }
       `}</style>
     </Card>
