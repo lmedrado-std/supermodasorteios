@@ -1,5 +1,13 @@
+'use client';
 import Link from 'next/link';
 import { Logo } from './Logo';
+import { Settings } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export function Header() {
   return (
@@ -11,10 +19,29 @@ export function Header() {
         <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline mt-2">
           Supermoda Sorteios
         </h1>
-        <nav className="mt-4 flex gap-4 text-sm md:text-base text-muted-foreground">
-            <Link href="/" className="hover:text-primary hover:underline">Início</Link>
-            <Link href="/meus-cupons" className="hover:text-primary hover:underline">Meus Cupons</Link>
-            <Link href="/admin/login" className="hover:text-primary hover:underline">Admin</Link>
+        <nav className="mt-4 flex items-center gap-4 text-sm md:text-base text-muted-foreground">
+          <Link href="/" className="hover:text-primary hover:underline">
+            Início
+          </Link>
+          <Link href="/meus-cupons" className="hover:text-primary hover:underline">
+            Meus Cupons
+          </Link>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="/admin/login"
+                  className="hover:text-primary"
+                  aria-label="Painel Administrativo"
+                >
+                  <Settings className="h-5 w-5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Painel Administrativo</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </nav>
       </div>
     </header>
