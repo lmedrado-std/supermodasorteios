@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   collection,
   query,
@@ -20,8 +20,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search } from 'lucide-react';
-import { format } from 'date-fns';
+import { Search, Download } from 'lucide-react';
+import { Logo } from '@/components/Logo';
+import html2canvas from 'html2canvas';
+
 
 type Coupon = {
   id: string;
@@ -40,6 +42,8 @@ function MeusCuponsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const couponContainerRef = useRef<HTMLDivElement>(null);
+
 
   const handleSearch = async () => {
     if (!firestore) return;
@@ -76,6 +80,22 @@ function MeusCuponsPage() {
       setIsLoading(false);
     }
   };
+  
+  const handleSaveCoupon = () => {
+    if (couponContainerRef.current && coupons.length > 0) {
+      html2canvas(couponContainerRef.current, {
+        backgroundColor: null,
+        scale: 2,
+      }).then((canvas) => {
+        const link = document.createElement('a');
+        const firstCoupon = coupons[0].couponNumber;
+        link.download = `meus-cupons-supermoda-${firstCoupon}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -119,28 +139,29 @@ function MeusCuponsPage() {
               </div>
 
               {searched && !isLoading && (
-                <div className="mt-8">
+                <div className="mt-8 text-center animate-in fade-in-50 duration-500">
                   {coupons.length > 0 ? (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-center">
-                        Cupons encontrados para {coupons[0].fullName}:
-                      </h3>
-                      <ul className="space-y-3">
-                        {coupons.map((coupon) => (
-                          <li
-                            key={coupon.id}
-                            className="bg-primary/10 border border-primary/20 rounded-md p-4"
-                          >
-                            <p className="font-bold text-xl text-primary tracking-wider text-center">
-                              {coupon.couponNumber}
-                            </p>
-                            <div className="mt-2 text-sm text-muted-foreground space-y-1 text-center sm:text-left">
-                               <p><span className="font-semibold">Nº da Compra:</span> {coupon.purchaseNumber}</p>
-                               <p><span className="font-semibold">Data:</span> {format(coupon.registrationDate.toDate(),'dd/MM/yyyy HH:mm:ss')}</p>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                    <div className="space-y-6">
+                        <div ref={couponContainerRef} className="bg-gradient-to-br from-background to-secondary/50 p-6 rounded-lg border-2 border-dashed border-primary/50 shadow-lg inline-block w-full max-w-md">
+                          <div className="text-center space-y-4">
+                              <Logo className="h-10 w-auto mx-auto"/>
+                              <p className="text-muted-foreground">Parabéns! Aqui estão seus números da sorte.</p>
+                              <p className="text-2xl font-bold text-primary">{coupons[0].fullName}</p>
+                              <div className="bg-primary/10 border border-primary/20 rounded-md px-4 py-3 space-y-2">
+                                  <p className="text-sm font-semibold text-primary">Seus Números da Sorte:</p>
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                    {coupons.map(coupon => (
+                                      <p key={coupon.id} className="text-2xl font-bold tracking-wider text-foreground">{coupon.couponNumber}</p>
+                                    ))}
+                                  </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground pt-2">Boa Sorte no sorteio! 🍀</p>
+                          </div>
+                      </div>
+                      <Button onClick={handleSaveCoupon} className="w-full max-w-xs mx-auto">
+                        Salvar Meus Cupons
+                        <Download className="ml-2 h-4 w-4" />
+                      </Button>
                     </div>
                   ) : (
                     <p className="text-center text-muted-foreground">
