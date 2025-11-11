@@ -48,8 +48,7 @@ export default function LoginPage() {
 
     try {
       const email = 'admin@supermoda.com';
-      // Temporarily hardcoded for password reset
-      await signInWithEmailAndPassword(auth, email, "supermoda");
+      await signInWithEmailAndPassword(auth, email, password);
       // O useEffect cuidará do redirecionamento para /admin após a mudança de estado do usuário.
     } catch (error: any) {
       let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
