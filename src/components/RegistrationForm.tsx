@@ -26,6 +26,7 @@ import html2canvas from 'html2canvas';
 import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from './ui/scroll-area';
+import { Checkbox } from './ui/checkbox';
 
 const initialState: {
   message: string | null;
@@ -157,6 +158,12 @@ export function RegistrationForm() {
       return;
     }
     
+    const termsAccepted = formData.get('terms') as string;
+    if (termsAccepted !== 'on') {
+        setState({ message: 'Você deve declarar que as informações são verídicas para participar.' });
+        return;
+    }
+
     const quizAnswer = formData.get('quiz') as string;
     if (quizAnswer !== 'supermoda') {
         setState({ message: 'Resposta incorreta. Tente novamente!' });
@@ -454,6 +461,21 @@ export function RegistrationForm() {
               <Label htmlFor="r3" className="font-normal">Ainda estou descobrindo 😄</Label>
             </div>
           </RadioGroup>
+        </div>
+
+        <div className="flex items-start space-x-2 pt-2">
+          <Checkbox id="terms" name="terms" required />
+          <div className="grid gap-1.5 leading-none">
+            <label
+              htmlFor="terms"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Declaro que todas as informações são verídicas.
+            </label>
+            <p className="text-sm text-muted-foreground">
+              Estou ciente de que, para a validação do prêmio, deverei cumprir todos os requisitos da promoção.
+            </p>
+          </div>
         </div>
 
            {raffleSettings && (
