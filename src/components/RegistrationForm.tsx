@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { CheckCircle2, Download, Ticket } from 'lucide-react';
+import { CheckCircle2, Download, Ticket, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   collection,
@@ -32,6 +32,10 @@ const initialState: {
   message: null,
   coupons: [],
   fullName: null,
+};
+
+type RaffleSettings = {
+  valuePerCoupon: number;
 };
 
 function SubmitButton() {
@@ -66,6 +70,7 @@ export function RegistrationForm() {
   const firestore = useFirestore();
   const [state, setState] = useState(initialState);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [raffleSettings, setRaffleSettings] = useState<RaffleSettings | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const couponContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -73,6 +78,29 @@ export function RegistrationForm() {
   const signalFormEnd = () => {
     document.dispatchEvent(new CustomEvent('formProcessingEnd'));
   };
+  
+  useEffect(() => {
+    if (!firestore) return;
+
+    const fetchSettings = async () => {
+      try {
+        const settingsDocRef = doc(firestore, 'settings/raffle');
+        const settingsDoc = await getDoc(settingsDocRef);
+        if (settingsDoc.exists() && settingsDoc.data().valuePerCoupon > 0) {
+          setRaffleSettings(settingsDoc.data() as RaffleSettings);
+        } else {
+          // Fallback to a default if not set
+          setRaffleSettings({ valuePerCoupon: 200 });
+        }
+      } catch (e) {
+        console.warn("Could not fetch raffle settings. Using default value.", e);
+        setRaffleSettings({ valuePerCoupon: 200 });
+      }
+    };
+
+    fetchSettings();
+  }, [firestore]);
+
 
   useEffect(() => {
     if (state.message) {
@@ -147,17 +175,8 @@ export function RegistrationForm() {
       return;
     }
     
-    // Fetch coupon generation rule from settings
-    let valuePerCoupon = 200; // Default value
-    try {
-        const settingsDocRef = doc(firestore, 'settings/raffle');
-        const settingsDoc = await getDoc(settingsDocRef);
-        if (settingsDoc.exists() && settingsDoc.data().valuePerCoupon > 0) {
-            valuePerCoupon = settingsDoc.data().valuePerCoupon;
-        }
-    } catch(e) {
-        console.warn("Could not fetch raffle settings. Using default value.", e)
-    }
+    // Use the settings from state
+    const valuePerCoupon = raffleSettings ? raffleSettings.valuePerCoupon : 200;
 
     const couponsToGenerate = Math.floor(valorCompra / valuePerCoupon);
 
@@ -294,7 +313,7 @@ export function RegistrationForm() {
             placeholder="Apenas números"
             required
             maxLength={11}
-            pattern="\d{11}"
+            pattern="\\d{11}"
           />
         </div>
         <div>
@@ -305,6 +324,12 @@ export function RegistrationForm() {
         <div>
           <Label htmlFor="valorCompra">Valor da Compra (R$)</Label>
           <Input id="valorCompra" name="valorCompra" placeholder="Ex: 250,50" required inputMode="decimal" />
+           {raffleSettings && (
+            <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 p-2 rounded-md">
+                <Info className="h-4 w-4 flex-shrink-0" />
+                <span>A cada <strong>R$ {raffleSettings.valuePerCoupon.toFixed(2).replace('.', ',')}</strong> em compras, você ganha 1 cupom.</span>
+            </div>
+           )}
         </div>
         <SubmitButton />
       </form>
