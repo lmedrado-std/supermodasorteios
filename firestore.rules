@@ -3,51 +3,59 @@
  *
  * Core Philosophy:
  * This ruleset implements a role-based access control model with dedicated collections for data and admin roles.
+ * By default, access is denied. Rules explicitly grant access.
  *
  * Data Structure:
  * - `/coupons/{couponId}`: Stores individual raffle coupon data.
+ * - `/counters/{counterId}`: Stores atomic counters, primarily for coupon numbers.
  * - `/roles_admin/{adminUserId}`: Presence of a document grants admin privileges to the corresponding user.
  * - `/settings/raffle`: Stores application settings, like value per coupon.
+ * - `/winners/{winnerId}`: Stores a history of raffle winners.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants public read access to coupons and restricts write access to admins.
-     * The create rule allows public write but validates the timestamp.
+     * @description Public users can create coupons if they provide valid data. Only admins can modify or delete them.
+     * Anyone can read coupon data (e.g., for the "Meus Cupons" page).
      * @path /coupons/{couponId}
      */
     match /coupons/{couponId} {
       allow get, list: if true;
-      allow create: if request.resource.data.purchaseDate is timestamp;
+      allow create: if request.auth == null // Allow anonymous/public creation
+                    && request.resource.data.fullName is string
+                    && request.resource.data.cpf is string
+                    && request.resource.data.purchaseNumber is string
+                    && request.resource.data.purchaseValue is number
+                    && request.resource.data.purchaseDate is timestamp
+                    && request.resource.data.couponNumber is string
+                    && request.resource.data.registrationDate == request.time; // Enforce server timestamp
       allow update, delete: if isAdmin();
     }
     
     /**
-     * @description Enables public write access for coupon generation counter.
+     * @description Enables transactional read/write access for coupon generation counter.
      * This is required for the transaction that generates new coupon numbers.
+     * Access is public but operations are expected to be transactional and atomic.
      * @path /counters/{counterId}
      */
     match /counters/{counterId} {
-        allow read, write: if true;
+        allow read, write: if true; // Allows transactions to read and update the counter.
     }
     
     /**
      * @description Secures admin role documents.
-     * - A user can read their own role document.
-     * - A user can create their own role document if it includes role: 'admin'.
-     * - Admins can list all roles.
-     * - Roles cannot be updated or deleted by clients.
+     * - An authenticated user can read their own role document.
+     * - Only admins can list all roles (for potential future admin management panels).
+     * - Roles cannot be created, updated or deleted by clients to prevent privilege escalation.
+     *   Admin roles must be set manually in the Firebase Console for security.
      * @path /roles_admin/{adminUserId}
      */
     match /roles_admin/{adminUserId} {
       allow get: if isSignedIn() && request.auth.uid == adminUserId;
       allow list: if isAdmin();
-      allow create: if isSignedIn() 
-                    && request.auth.uid == adminUserId
-                    && request.resource.data.role == 'admin';
-      allow update, delete: if false; // Roles should not be updatable or deletable by clients.
+      allow create, update, delete: if false; // Prevent client-side role changes.
     }
     
     /**
@@ -66,7 +74,7 @@ service cloud.firestore {
     match /winners/{winnerId} {
         allow get, list: if true;
         allow create: if isAdmin();
-        allow update, delete: if false;
+        allow update, delete: if false; // Winners are immutable records.
     }
 
     // Helper functions
@@ -75,7 +83,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
   }
 }

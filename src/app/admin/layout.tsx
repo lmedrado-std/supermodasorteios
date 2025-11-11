@@ -8,90 +8,111 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import AdminMenu from './components/AdminMenu';
 import { Logo } from '@/components/Logo';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldAlert } from 'lucide-react';
+
+type AuthStatus = 'loading' | 'admin' | 'guest' | 'unauthorized';
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const { auth, firestore } = useFirebase();
   const router = useRouter();
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
+  
   const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
-    // Se ainda estiver verificando o usuário, não faz nada.
+    // Controller to prevent state updates on unmounted component
+    const abortController = new AbortController();
+
     if (isUserLoading) {
+      setAuthStatus('loading');
       return;
     }
 
-    // Se NÃO há usuário...
     if (!user) {
-      // e não estamos na página de login, redireciona para lá.
+      setAuthStatus('guest');
       if (!isLoginPage) {
         router.push('/admin/login');
       }
       return;
     }
 
-    // Se HÁ usuário...
-    // ... e estamos na página de login, redireciona para o painel.
-    if (isLoginPage) {
-        router.push('/admin');
-        return;
-    }
-    
-    // ... e ainda não verificamos se é admin, faz a verificação.
-    if (isAdmin === null && firestore) {
-      const checkAdmin = async () => {
-        try {
-          const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-          const adminDoc = await getDoc(adminRoleRef);
-          
-          if (adminDoc.exists()) {
-            setIsAdmin(true); // É admin, permite o acesso.
-          } else {
-            setIsAdmin(false); // Não é admin.
-            if (auth) await signOut(auth); // Desloga...
-            router.push('/admin/login'); // ...e redireciona para o login.
-          }
-        } catch (error) {
-          console.error("Error checking admin status:", error);
-          setIsAdmin(false);
-          if (auth) await signOut(auth);
-          router.push('/admin/login');
-        }
-      };
+    // User is logged in, now check for admin role
+    const checkAdmin = async () => {
+      if (!firestore) return; // Wait for firestore to be available
+      
+      try {
+        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+        const adminDoc = await getDoc(adminRoleRef);
 
-      checkAdmin();
-    }
-    
-  }, [user, isUserLoading, firestore, auth, router, pathname, isAdmin, isLoginPage]);
+        if (abortController.signal.aborted) return;
+
+        if (adminDoc.exists()) {
+          setAuthStatus('admin');
+          if (isLoginPage) {
+            router.push('/admin');
+          }
+        } else {
+          setAuthStatus('unauthorized');
+          // Don't log out immediately, show an unauthorized message first
+        }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        if (abortController.signal.aborted) return;
+        setAuthStatus('unauthorized'); // Treat errors as unauthorized
+      }
+    };
+
+    checkAdmin();
+
+    return () => {
+      abortController.abort(); // Cleanup on unmount
+    };
+
+  }, [user, isUserLoading, firestore, isLoginPage, router]);
 
   const handleLogout = async () => {
     if (auth) {
-      setIsAdmin(null); // Reseta o estado de admin
       await signOut(auth);
+      setAuthStatus('guest'); // Manually set status after logout
       router.push('/admin/login');
     }
   };
-
-  // Tela de carregamento principal enquanto verifica o usuário ou o status de admin.
-  if (isUserLoading || (user && !isLoginPage && isAdmin === null)) {
+  
+  // 1. Central Loading State
+  if (authStatus === 'loading') {
     return (
-      <div className="flex flex-col justify-center items-center h-screen gap-4">
+      <div className="flex flex-col justify-center items-center h-screen gap-4" aria-live="polite">
         <Loader2 className="h-8 w-8 animate-spin" />
         <p>Verificando permissões...</p>
       </div>
     );
   }
 
-  // Se for a página de login e não houver usuário, exibe a página.
-  if (isLoginPage && !user) {
+  // 2. Guest user trying to access login page
+  if (authStatus === 'guest' && isLoginPage) {
     return <>{children}</>;
   }
+  
+  // 3. Unauthorized user (logged in but not admin)
+  if (authStatus === 'unauthorized') {
+     return (
+       <div className="flex flex-col justify-center items-center h-screen gap-4 text-center p-4">
+         <ShieldAlert className="h-12 w-12 text-destructive" />
+         <h1 className="text-2xl font-bold">Acesso Negado</h1>
+         <p className="text-muted-foreground max-w-md">
+           Você não tem permissão para acessar esta área. Se você acredita que isso é um erro, contate o administrador do sistema.
+         </p>
+         <button onClick={handleLogout} className="mt-4 text-primary underline">
+            Fazer login com outra conta
+         </button>
+      </div>
+    );
+  }
 
-  // Se for uma página protegida e o usuário for admin, exibe o layout.
-  if (!isLoginPage && user && isAdmin) {
+  // 4. Authorized Admin
+  if (authStatus === 'admin' && !isLoginPage) {
     return (
         <div className="min-h-screen bg-muted/40">
           <header className="bg-background shadow-sm sticky top-0 z-50">
@@ -128,7 +149,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-   // Se nenhuma das condições acima for atendida (ex: usuário não-admin em página de admin), mostra um loader genérico antes de redirecionar.
+   // Fallback state, usually shows loader while transitioning
    return (
        <div className="flex flex-col justify-center items-center h-screen gap-4">
          <Loader2 className="h-8 w-8 animate-spin" />
