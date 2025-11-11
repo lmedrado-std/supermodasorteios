@@ -4,6 +4,7 @@ import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, Timestamp } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CalendarClock, PartyPopper } from 'lucide-react';
+import { endOfDay } from 'date-fns';
 
 type RaffleSettings = {
   campaignEndDate?: Timestamp;
@@ -35,7 +36,7 @@ export function CountdownTimer() {
       return;
     }
 
-    const endDate = settings.campaignEndDate.toDate();
+    const endDate = endOfDay(settings.campaignEndDate.toDate());
 
     const calculateTimeLeft = () => {
       const difference = +endDate - +new Date();

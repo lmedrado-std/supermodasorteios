@@ -418,5 +418,3 @@ export function RegistrationForm() {
     </div>
   );
 }
-
-    
