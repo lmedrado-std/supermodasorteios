@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { CheckCircle2, Download, Ticket, Info, Calendar } from 'lucide-react';
+import { CheckCircle2, Download, Ticket, Info, Calendar, ShoppingCart, DollarSign, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   collection,
@@ -138,9 +138,9 @@ export function RegistrationForm() {
     if (couponContainerRef.current) {
         const couponNode = couponContainerRef.current;
         html2canvas(couponNode, {
-            backgroundColor: '#dc2626', // Match the background
             scale: 2,
             useCORS: true,
+            backgroundColor: null, 
         }).then((canvas) => {
             const link = document.createElement('a');
             const firstCoupon = state.coupons ? state.coupons[0] : 'cupom';
@@ -309,52 +309,82 @@ export function RegistrationForm() {
           </Alert>
             
           <div className="flex flex-col items-center gap-6">
-            <div ref={couponContainerRef} className="bg-red-600 rounded-2xl p-2 shadow-2xl w-full max-w-sm">
-                <div className="relative bg-white rounded-xl p-6 text-center space-y-4">
-                    {/* Perforated edges effect */}
-                    <div className="absolute top-28 -left-3 w-6 h-6 bg-red-600 rounded-full"></div>
-                    <div className="absolute top-28 -right-3 w-6 h-6 bg-red-600 rounded-full"></div>
-                    
-                    <h2 className="text-2xl font-bold text-red-600 font-headline">Sorteio Supermoda</h2>
-                    {state.coupons && state.coupons.length > 0 && (
-                        <div className="bg-amber-100 border-2 border-dashed border-amber-400 rounded-lg py-1 px-3 inline-block">
-                           <p className="text-sm font-bold text-amber-800">Você gerou <span className="text-base">{state.coupons.length}</span> cupom(ns) nesta compra!</p>
-                        </div>
-                    )}
-                    <div className="border-t-2 border-dashed border-gray-300 w-full my-4 pt-4 flex justify-between items-center">
-                        <div>
-                            <p className="text-3xl md:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-amber-500" style={{textShadow: '1px 1px 2px rgba(0,0,0,0.2)'}}>{state.coupons?.[0]}</p>
-                        </div>
-                        <div className="text-right">
-                           <p className="text-sm font-bold text-red-600 uppercase">{state.fullName}</p>
-                        </div>
+            <div ref={couponContainerRef} className="bg-card rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border">
+                {/* Header */}
+                <div className="bg-primary p-4 text-center">
+                    <h2 className="text-2xl font-bold text-primary-foreground font-headline flex items-center justify-center gap-2">
+                        🎟️ Sorteio Supermoda!
+                    </h2>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                    {/* Coupon Info */}
+                    <div className="text-center">
+                        <p className="text-5xl font-black tracking-wider" style={{color: '#e30613'}}>{state.coupons?.[0]}</p>
+                        <p className="text-lg text-muted-foreground mt-1">{state.fullName}</p>
                     </div>
 
+                    {/* Multiple coupons */}
                     {state.coupons && state.coupons.length > 1 && (
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-lg font-bold text-gray-700">
-                        {state.coupons.slice(1).map(coupon => <p key={coupon}>{coupon}</p>)}
+                      <div className="text-center">
+                          <p className="font-bold mb-2">Seus Cupons:</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {state.coupons.map(coupon => (
+                               <div key={coupon} className="border rounded-md p-2 text-center bg-muted/50">
+                                  <p className="font-bold text-sm">🏷️ {coupon}</p>
+                               </div>
+                            ))}
+                          </div>
                       </div>
                     )}
+                    
+                    {/* Divider */}
+                    <div className="border-t-2 border-dashed w-full"></div>
 
-                    <div className="pt-4 flex flex-col items-center justify-center gap-4">
-                        <CouponLogo className="w-40 h-auto" />
+                    {/* Purchase Info */}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-left">
+                        <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-muted-foreground"/>
+                            <div>
+                                <p className="font-bold">Valor da Compra</p>
+                                <p>R$ {state.purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}</p>
+                            </div>
+                        </div>
+                         <div className="flex items-center gap-2">
+                            <ShoppingCart className="h-4 w-4 text-muted-foreground"/>
+                            <div>
+                                <p className="font-bold">Nº da Compra</p>
+                                <p>{state.purchaseNumber ?? 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground"/>
+                            <div>
+                                <p className="font-bold">Data da Compra</p>
+                                <p>{state.purchaseDate ? format(state.purchaseDate, 'dd/MM/yyyy') : 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground"/>
+                            <div>
+                                <p className="font-bold">Data do Cadastro</p>
+                                <p>{state.registrationDate ? format(state.registrationDate, 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="text-left text-xs text-gray-600 space-y-1 pt-4 border-t border-dashed">
-                       <p><span className="font-bold">Data Cadastro:</span> {state.registrationDate ? format(state.registrationDate, 'dd/MM/yyyy HH:mm') : 'N/A'}</p>
-                      <p><span className="font-bold">Data Compra:</span> {state.purchaseDate ? format(state.purchaseDate, 'dd/MM/yyyy') : 'N/A'}</p>
-                      <p><span className="font-bold">Valor Compra:</span> R$ {state.purchaseValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? 'N/A'}</p>
-                      <p><span className="font-bold">Nº Compra:</span> {state.purchaseNumber ?? 'N/A'}</p>
-                    </div>
+                </div>
 
-                    <div className="flex justify-between items-center pt-4">
-                        <p className="text-xs font-semibold text-amber-600">♦︎♦︎ Boa Sorte!</p>
-                        <Button onClick={handleSaveCoupon} size="sm" className="bg-red-600 text-white rounded-full px-6 shadow-md border-2 border-amber-400 hover:bg-red-700">
-                            <Download className="mr-2" /> Salvar
-                        </Button>
-                    </div>
+                 {/* Footer */}
+                <div className="bg-muted p-4 mt-4 text-center">
+                   <p className="text-sm font-bold text-muted-foreground">❤️ Supermoda!</p>
+                   <p className="text-xs text-muted-foreground">Boa sorte no sorteio!</p>
                 </div>
             </div>
+
+            <Button onClick={handleSaveCoupon} size="lg" className="bg-[#e30613] text-white hover:bg-[#f5b800] w-full max-w-md">
+                <Download className="mr-2" /> Baixar Cupom
+            </Button>
 
              <Button variant="outline" onClick={() => { setShowSuccess(false); setState(initialState); }} className="w-full max-w-sm mx-auto">
                 Registrar Novo Cupom
