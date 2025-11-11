@@ -19,7 +19,6 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('admin@supermoda.com');
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { toast } = useToast();
@@ -48,12 +47,13 @@ export default function LoginPage() {
     setIsLoggingIn(true);
 
     try {
+      const email = 'admin@supermoda.com';
       await signInWithEmailAndPassword(auth, email, password);
       // O useEffect cuidará do redirecionamento para /admin após a mudança de estado do usuário.
     } catch (error: any) {
       let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
       if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        description = 'Email ou senha incorretos.';
+        description = 'Senha incorreta.';
       } else if (error.code === 'auth/too-many-requests') {
         description = 'Muitas tentativas. Tente novamente mais tarde.';
       }
@@ -92,20 +92,6 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder='admin@supermoda.com'
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
                 <div>
                   <Label htmlFor="password">Senha</Label>
                   <Input
