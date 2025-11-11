@@ -25,6 +25,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import html2canvas from 'html2canvas';
 import { CouponLogo } from './CouponLogo';
 import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const initialState: {
   message: string | null;
@@ -154,6 +155,12 @@ export function RegistrationForm() {
     if (!firestore || !raffleSettings) {
       setState({ message: 'Serviço de banco de dados ou configurações não disponíveis.' });
       return;
+    }
+    
+    const quizAnswer = formData.get('quiz') as string;
+    if (quizAnswer !== 'supermoda') {
+        setState({ message: 'Resposta incorreta. Tente novamente!' });
+        return;
     }
 
     const nome = formData.get('nome') as string;
@@ -397,6 +404,24 @@ export function RegistrationForm() {
                 <Label htmlFor="dataCompra">Data da Compra</Label>
                 <Input id="dataCompra" name="dataCompra" type="date" required />
             </div>
+        </div>
+
+        <div className="space-y-3">
+          <Label>Qual a loja que tá na moda ser feliz?</Label>
+          <RadioGroup name="quiz" required className="flex flex-col space-y-1">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="supermoda" id="r1" />
+              <Label htmlFor="r1" className="font-normal">Supermoda</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="other-a" id="r2" />
+              <Label htmlFor="r2" className="font-normal">Outra Loja A</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="other-b" id="r3" />
+              <Label htmlFor="r3" className="font-normal">Outra Loja B</Label>
+            </div>
+          </RadioGroup>
         </div>
 
            {raffleSettings && (
