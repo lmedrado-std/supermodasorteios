@@ -5,7 +5,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,14 +58,21 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       // O useEffect cuidará do redirecionamento após a mudança de estado do usuário.
     } catch (error: any) {
+      // Se o usuário não existe E a senha é a senha mestre inicial...
       if (error.code === 'auth/user-not-found' && password === 'supermoda') {
         try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, 'supermoda');
+          // ...cria o usuário...
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const newUser = userCredential.user;
-          // Create the admin role document
+          // ...e cria o documento de permissão de admin para ele.
           const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
           await setDoc(adminRoleRef, { role: 'admin' });
-          // O login é automático após a criação, e o useEffect fará o redirecionamento.
+          
+          toast({
+            title: 'Administrador Criado!',
+            description: 'Login efetuado com sucesso. Lembre-se de alterar sua senha.',
+          });
+          // O login é automático após a criação, e o useEffect cuidará do redirecionamento.
         } catch (creationError: any) {
           toast({
             variant: 'destructive',
@@ -75,6 +82,7 @@ export default function LoginPage() {
           setIsLoggingIn(false);
         }
       } else {
+        // Para todos os outros erros de login...
         let description = 'Ocorreu um erro. Verifique suas credenciais e tente novamente.';
         if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
           description = 'Senha incorreta.';
