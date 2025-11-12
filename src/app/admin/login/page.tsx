@@ -14,7 +14,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
 } from '@/components/ui/card';
 import { LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
@@ -91,7 +90,7 @@ export default function LoginPage() {
         // Cenário de erro genérico (senha incorreta, etc).
         let description = 'Ocorreu um erro. Verifique suas credenciais.';
         if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-          description = 'Senha incorreta. Siga as instruções em "Problemas para acessar?" se o erro persistir.';
+          description = 'Senha incorreta.';
         } else if (error.code === 'auth/too-many-requests') {
           description = 'Muitas tentativas de login falharam. Por segurança, sua conta foi temporariamente bloqueada. Tente novamente mais tarde.';
         }
@@ -128,9 +127,6 @@ export default function LoginPage() {
               <CardTitle className="text-2xl font-bold text-center">
                 Painel Administrativo
               </CardTitle>
-              <CardDescription className="text-center pt-2">
-                Acesso restrito para administradores.
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
@@ -170,16 +166,6 @@ export default function LoginPage() {
                   {isLoggingIn ? 'Entrando...' : 'Entrar'}
                 </Button>
               </form>
-               <div className="mt-6 text-center text-sm text-muted-foreground p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="font-bold text-yellow-800">Problemas para acessar?</p> 
-                  <p className="mt-2">Se você está recebendo o erro "Senha incorreta", significa que o usuário administrador já existe. Para resetar o acesso, você deve:</p>
-                  <ol className="text-left list-decimal list-inside mt-2 space-y-1">
-                      <li>Ir ao <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline text-primary font-semibold">Console do Firebase</a> do seu projeto.</li>
-                      <li>Navegar até a seção <strong>Authentication</strong>.</li>
-                      <li>Encontrar e <strong>deletar</strong> o usuário com o email <strong>pix@nasupermoda.com</strong>.</li>
-                      <li>Voltar para esta tela e tentar logar novamente com a senha 'supermoda'.</li>
-                  </ol>
-              </div>
             </CardContent>
           </Card>
         </div>

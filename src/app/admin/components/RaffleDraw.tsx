@@ -224,14 +224,6 @@ export function RaffleDraw() {
                   <p className="font-bold text-gray-900">{winnerInfo.fullName}</p>
                 </div>
               </div>
-              
-               <div className="flex items-center gap-3 bg-gradient-to-r from-teal-50 to-cyan-50 p-3 rounded-lg hover:shadow-md transition">
-                <Phone className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                <div className="text-left">
-                  <p className="text-xs text-muted-foreground">Telefone</p>
-                  <p className="font-bold text-gray-900">{winnerInfo.telefone}</p>
-                </div>
-              </div>
 
                <div className="flex items-center gap-3 bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg hover:shadow-md transition">
                 <ShoppingCart className="h-5 w-5 text-purple-600 flex-shrink-0" />

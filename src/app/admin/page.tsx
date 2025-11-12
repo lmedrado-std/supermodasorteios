@@ -4,49 +4,75 @@ import { SettingsManager } from './components/SettingsManager';
 import { RaffleDraw } from './components/RaffleDraw';
 import { WinnerHistory } from './components/WinnerHistory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Ticket, Settings, PartyPopper, History } from 'lucide-react';
+import { Ticket, Settings, PartyPopper, History, LogOut } from 'lucide-react';
+import { useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminPage() {
-  return (
-    <Tabs defaultValue="coupons" className="space-y-4">
-      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
-        <TabsTrigger value="coupons" className="py-2 text-xs sm:text-sm">
-            <Ticket className="mr-1 sm:mr-2 h-4 w-4" />
-            Cupons
-        </TabsTrigger>
-        <TabsTrigger value="raffle" className="py-2 text-xs sm:text-sm">
-            <PartyPopper className="mr-1 sm:mr-2 h-4 w-4" />
-            Sorteio
-        </TabsTrigger>
-        <TabsTrigger value="settings" className="py-2 text-xs sm:text-sm">
-            <Settings className="mr-1 sm:mr-2 h-4 w-4" />
-            Configurações
-        </TabsTrigger>
-        <TabsTrigger value="history" className="py-2 text-xs sm:text-sm">
-            <History className="mr-1 sm:mr-2 h-4 w-4" />
-            Histórico
-        </TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="coupons">
-        <AdminTable />
-      </TabsContent>
-      
-      <TabsContent value="raffle">
-        <div className="max-w-2xl mx-auto">
-            <RaffleDraw />
-        </div>
-      </TabsContent>
+  const auth = useAuth();
+  const { toast } = useToast();
 
-      <TabsContent value="settings">
-         <div className="max-w-2xl mx-auto">
-            <SettingsManager />
-        </div>
-      </TabsContent>
-      
-      <TabsContent value="history">
-        <WinnerHistory />
-      </TabsContent>
-    </Tabs>
+  const handleLogout = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      toast({ title: 'Você saiu com sucesso.' });
+      // O redirecionamento será tratado pelo AdminLayout que detectará a ausência de usuário.
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Erro ao sair', description: 'Não foi possível fazer logout.' });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={handleLogout} variant="outline">
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </Button>
+      </div>
+      <Tabs defaultValue="coupons" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+          <TabsTrigger value="coupons" className="py-2 text-xs sm:text-sm">
+              <Ticket className="mr-1 sm:mr-2 h-4 w-4" />
+              Cupons
+          </TabsTrigger>
+          <TabsTrigger value="raffle" className="py-2 text-xs sm:text-sm">
+              <PartyPopper className="mr-1 sm:mr-2 h-4 w-4" />
+              Sorteio
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="py-2 text-xs sm:text-sm">
+              <Settings className="mr-1 sm:mr-2 h-4 w-4" />
+              Configurações
+          </TabsTrigger>
+          <TabsTrigger value="history" className="py-2 text-xs sm:text-sm">
+              <History className="mr-1 sm:mr-2 h-4 w-4" />
+              Histórico
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="coupons">
+          <AdminTable />
+        </TabsContent>
+        
+        <TabsContent value="raffle">
+          <div className="max-w-2xl mx-auto">
+              <RaffleDraw />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <div className="max-w-2xl mx-auto">
+              <SettingsManager />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="history">
+          <WinnerHistory />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
