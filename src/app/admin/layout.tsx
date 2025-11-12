@@ -119,7 +119,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="container mx-auto flex items-center justify-between p-4">
               <div className="flex items-center gap-4">
                 <Link href="/">
-                  <Logo className="h-8 md:h-10 w-auto" />
+                  <Logo className="h-10 md:h-12 w-auto" />
                 </Link>
                 <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline hidden md:block">
                   Painel Administrativo
