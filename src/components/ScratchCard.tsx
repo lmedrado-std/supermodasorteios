@@ -108,11 +108,13 @@ export const ScratchCard = ({ coupon, onScratch }: ScratchCardProps) => {
     window.addEventListener('touchend', stopDrawing);
 
     return () => {
-      canvas.removeEventListener('mousedown', startDrawing);
-      canvas.removeEventListener('mousemove', draw);
+      if (canvas) {
+        canvas.removeEventListener('mousedown', startDrawing);
+        canvas.removeEventListener('mousemove', draw);
+        canvas.removeEventListener('touchstart', startDrawing);
+        canvas.removeEventListener('touchmove', draw);
+      }
       window.removeEventListener('mouseup', stopDrawing);
-      canvas.removeEventListener('touchstart', startDrawing);
-      canvas.removeEventListener('touchmove', draw);
       window.removeEventListener('touchend', stopDrawing);
     };
   }, [isRevealed, handleScratch]);
@@ -130,6 +132,7 @@ export const ScratchCard = ({ coupon, onScratch }: ScratchCardProps) => {
         </p>
         <div 
           className={`relative w-full h-36 rounded-lg border-2 border-dashed border-amber-400 flex items-center justify-center transition-all duration-500`}
+          style={{ touchAction: 'none' }}
         >
           <div className={`absolute inset-0 flex items-center justify-center text-center p-2 transition-opacity duration-700 ${isRevealed ? 'opacity-100' : 'opacity-0'}`}>
             <div className='animate-in fade-in-50 zoom-in-90'>
