@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search, ChevronLeft } from 'lucide-react';
+import { Search, ChevronLeft, PartyPopper, Gift } from 'lucide-react';
 import { ScratchCard } from '@/components/ScratchCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from 'next/link';
@@ -53,6 +53,10 @@ function RaspadinhasPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [showPrizeModal, setShowPrizeModal] = useState(false);
+  const [prizeData, setPrizeData] = useState<ScratchCoupon | null>(null);
+  const [tab, setTab] = useState('disponiveis');
   
   const handleSearch = async () => {
     if (!firestore) return;
@@ -90,19 +94,42 @@ function RaspadinhasPage() {
     }
   };
 
-  const handleScratchCoupon = async (id: string) => {
+  const handleScratchCoupon = async (coupon: ScratchCoupon) => {
     if (!firestore) return;
-    const couponRef = doc(firestore, 'scratch_coupons', id);
+    
+    // 1. Update Firestore document
+    const couponRef = doc(firestore, 'scratch_coupons', coupon.id);
     try {
         await updateDoc(couponRef, {
             status: 'raspado',
             raspadoEm: serverTimestamp()
         });
-        // Optimistically update the local state to change the card's appearance
-        setScratchCoupons(prev => prev.map(c => c.id === id ? {...c, status: 'raspado', raspadoEm: new Timestamp(Math.floor(Date.now() / 1000), 0) } as ScratchCoupon : c));
+        
+        // 2. Set data for the prize modal and show it
+        setPrizeData(coupon);
+        setShowPrizeModal(true);
+
     } catch (error) {
         console.error("Error scratching coupon:", error);
     }
+  };
+  
+  const handleClosePrizeModal = () => {
+    // Hide the modal
+    setShowPrizeModal(false);
+
+    // After a short delay, update the local state to reflect the change
+    // This gives the modal a chance to animate out
+    setTimeout(() => {
+        setScratchCoupons(prev => prev.map(c => 
+            c.id === prizeData?.id 
+            ? { ...c, status: 'raspado', raspadoEm: new Timestamp(Math.floor(Date.now() / 1000), 0) } as ScratchCoupon 
+            : c
+        ));
+        // Switch to the 'used' tab
+        setTab('utilizados');
+        setPrizeData(null);
+    }, 300);
   };
   
   const availableCoupons = useMemo(() => scratchCoupons.filter(c => c.status === 'disponivel'), [scratchCoupons]);
@@ -161,7 +188,7 @@ function RaspadinhasPage() {
                     <h1 className="text-xl font-bold ml-2">Cupons Raspáveis</h1>
                 </div>
                 {hasAnyResults ? (
-                    <Tabs defaultValue="disponiveis" className="w-full">
+                    <Tabs value={tab} onValueChange={setTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="disponiveis">Disponíveis ({availableCoupons.length})</TabsTrigger>
                             <TabsTrigger value="utilizados">Utilizados ({usedCoupons.length})</TabsTrigger>
@@ -170,7 +197,7 @@ function RaspadinhasPage() {
                             {availableCoupons.length > 0 ? (
                                 <div className="space-y-6">
                                     {availableCoupons.map(coupon => 
-                                        <ScratchCard key={coupon.id} coupon={coupon} onScratch={handleScratchCoupon} />
+                                        <ScratchCard key={coupon.id} coupon={coupon} onScratch={() => handleScratchCoupon(coupon)} />
                                     )}
                                 </div>
                             ) : (
@@ -216,6 +243,32 @@ function RaspadinhasPage() {
             </div>
           )}
         </div>
+        {showPrizeModal && prizeData && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in-50">
+                <div className="w-full max-w-sm m-4 bg-background rounded-2xl shadow-2xl border text-center p-8 animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
+                    <div className="relative inline-block">
+                        <PartyPopper className="h-16 w-16 mx-auto text-amber-500 animate-bounce" />
+                    </div>
+                    <h2 className="text-2xl font-black mt-4 text-transparent bg-gradient-to-r from-amber-600 to-yellow-500 bg-clip-text">
+                        PARABÉNS!
+                    </h2>
+                    <p className="text-muted-foreground mt-1">Você ganhou um prêmio instantâneo!</p>
+
+                    <div className="my-6 p-6 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white">
+                        <Gift className="h-8 w-8 mx-auto mb-2"/>
+                        <p className="text-xs uppercase font-bold text-white/80">Seu Prêmio</p>
+                        <p className="text-2xl font-bold">{prizeData.premio}</p>
+                    </div>
+                     <p className="text-xs text-muted-foreground">
+                        O prêmio foi adicionado à sua aba de "Utilizados". Apresente-o na loja para resgatar.
+                    </p>
+
+                    <Button onClick={handleClosePrizeModal} className="w-full mt-6">
+                        Continuar
+                    </Button>
+                </div>
+            </div>
+        )}
       </main>
       <Footer />
     </div>

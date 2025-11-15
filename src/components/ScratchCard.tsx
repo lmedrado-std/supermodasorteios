@@ -4,13 +4,15 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Sparkles, Gift } from 'lucide-react';
 
+type ScratchCoupon = {
+  id: string;
+  premio: string;
+  status: 'disponivel' | 'raspado' | 'expirado';
+};
+
 interface ScratchCardProps {
-  coupon: {
-    id: string;
-    premio: string;
-    status: 'disponivel' | 'raspado';
-  };
-  onScratch: (id: string) => void;
+  coupon: ScratchCoupon;
+  onScratch: (coupon: ScratchCoupon) => void;
 }
 
 const SCRATCH_THRESHOLD = 40; // Percentage to reveal
@@ -24,9 +26,9 @@ export const ScratchCard = ({ coupon, onScratch }: ScratchCardProps) => {
   const handleScratch = useCallback(() => {
     if (!isRevealed) {
       setIsRevealed(true);
-      onScratch(coupon.id);
+      onScratch(coupon);
     }
-  }, [isRevealed, onScratch, coupon.id]);
+  }, [isRevealed, onScratch, coupon]);
 
   useEffect(() => {
     if (isRevealed || !canvasRef.current) return;
