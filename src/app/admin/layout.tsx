@@ -27,6 +27,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const isLoginPage = pathname === '/admin/login';
 
@@ -155,7 +156,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 {user && auth && <AdminMenu user={user} auth={auth} onLogout={handleLogout} />}
                  {/* Mobile Menu */}
                 <div className="md:hidden">
-                    <Sheet>
+                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                         <SheetTrigger asChild>
                         <Button variant="ghost" size="icon">
                             <Menu className="h-6 w-6" />
@@ -164,21 +165,21 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                         </SheetTrigger>
                         <SheetContent side="right">
                         <div className="flex flex-col gap-4 py-6">
-                            <Link href="/" className='mb-4'>
+                            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className='mb-4'>
                                 <Logo className="h-14 w-auto" />
                             </Link>
                             <Separator />
                              <Button variant="ghost" className="justify-start text-base" asChild>
-                                <Link href="/"><Home className='mr-2'/> Início</Link>
+                                <Link href="/" onClick={() => setIsMobileMenuOpen(false)}><Home className='mr-2'/> Início</Link>
                             </Button>
                             <Button variant="ghost" className="justify-start text-base" asChild>
-                                <Link href="/meus-cupons"><Ticket className='mr-2'/> Cupons de Sorteio</Link>
+                                <Link href="/meus-cupons" onClick={() => setIsMobileMenuOpen(false)}><Ticket className='mr-2'/> Cupons de Sorteio</Link>
                             </Button>
                             <Button variant="ghost" className="justify-start text-base" asChild>
-                                <Link href="/raspadinhas"><Sparkles className='mr-2'/> Raspadinhas</Link>
+                                <Link href="/raspadinhas" onClick={() => setIsMobileMenuOpen(false)}><Sparkles className='mr-2'/> Raspadinhas</Link>
                             </Button>
                             <Button variant="ghost" className="justify-start text-base" asChild>
-                                <Link href="/regulamento"><FileText className='mr-2'/> Regulamento</Link>
+                                <Link href="/regulamento" onClick={() => setIsMobileMenuOpen(false)}><FileText className='mr-2'/> Regulamento</Link>
                             </Button>
                         </div>
                         </SheetContent>

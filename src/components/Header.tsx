@@ -21,8 +21,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Separator } from './ui/separator';
+import { useState } from 'react';
 
 export function Header() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
   return (
     <header className="bg-card shadow-sm sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between p-4">
@@ -72,7 +75,7 @@ export function Header() {
 
         {/* Mobile Menu */}
         <div className="md:hidden">
-          <Sheet>
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Menu className="h-6 w-6" />
@@ -81,25 +84,25 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="right">
               <div className="flex flex-col gap-4 py-6">
-                 <Link href="/" className='mb-4'>
+                 <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className='mb-4'>
                     <Logo className="h-14 w-auto" />
                 </Link>
                 <Separator />
                 <Button variant="ghost" className="justify-start text-base" asChild>
-                    <Link href="/"><Home className='mr-2'/> Início</Link>
+                    <Link href="/" onClick={() => setIsMobileMenuOpen(false)}><Home className='mr-2'/> Início</Link>
                 </Button>
                  <Button variant="ghost" className="justify-start text-base" asChild>
-                    <Link href="/meus-cupons"><Ticket className='mr-2'/> Cupons de Sorteio</Link>
+                    <Link href="/meus-cupons" onClick={() => setIsMobileMenuOpen(false)}><Ticket className='mr-2'/> Cupons de Sorteio</Link>
                 </Button>
                  <Button variant="ghost" className="justify-start text-base" asChild>
-                    <Link href="/raspadinhas"><Sparkles className='mr-2'/> Raspadinhas</Link>
+                    <Link href="/raspadinhas" onClick={() => setIsMobileMenuOpen(false)}><Sparkles className='mr-2'/> Raspadinhas</Link>
                 </Button>
                 <Button variant="ghost" className="justify-start text-base" asChild>
-                    <Link href="/regulamento"><FileText className='mr-2'/> Regulamento</Link>
+                    <Link href="/regulamento" onClick={() => setIsMobileMenuOpen(false)}><FileText className='mr-2'/> Regulamento</Link>
                 </Button>
                 <Separator />
                  <Button variant="outline" className="justify-start text-base" asChild>
-                    <Link href="/admin/login"><Settings className='mr-2'/> Painel Admin</Link>
+                    <Link href="/admin/login" onClick={() => setIsMobileMenuOpen(false)}><Settings className='mr-2'/> Painel Admin</Link>
                 </Button>
               </div>
             </SheetContent>
