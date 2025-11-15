@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import {
   collection,
@@ -63,6 +63,7 @@ export function ScratchCouponManager() {
   const [premio, setPremio] = useState('');
   const [isReleasing, setIsReleasing] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'disponivel' | 'raspado'>('all');
 
   const scratchCouponsQuery = useMemoFirebase(
     () =>
@@ -73,6 +74,13 @@ export function ScratchCouponManager() {
   );
 
   const { data: scratchCoupons, isLoading } = useCollection<ScratchCoupon>(scratchCouponsQuery);
+  
+  const filteredCoupons = useMemo(() => {
+    if (!scratchCoupons) return [];
+    if (filter === 'all') return scratchCoupons;
+    return scratchCoupons.filter(coupon => coupon.status === filter);
+  }, [scratchCoupons, filter]);
+
 
   const handleRelease = async () => {
     if (!firestore) return;
@@ -194,8 +202,31 @@ export function ScratchCouponManager() {
         <CardHeader>
           <CardTitle>Histórico de Raspadinhas</CardTitle>
           <CardDescription>
-            Total de {scratchCoupons?.length ?? 0} raspadinhas liberadas.
+            Total de {filteredCoupons?.length ?? 0} de {scratchCoupons?.length ?? 0} raspadinhas liberadas.
           </CardDescription>
+           <div className="flex items-center gap-2 pt-4">
+            <Button
+              variant={filter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('all')}
+            >
+              Todos
+            </Button>
+            <Button
+              variant={filter === 'disponivel' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('disponivel')}
+            >
+              Disponíveis
+            </Button>
+            <Button
+              variant={filter === 'raspado' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('raspado')}
+            >
+              Raspados
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto max-h-[400px]">
@@ -218,19 +249,19 @@ export function ScratchCouponManager() {
                     </TableCell>
                   </TableRow>
                 )}
-                {!isLoading && scratchCoupons?.length ? (
-                  scratchCoupons.map((coupon) => (
+                {!isLoading && filteredCoupons.length > 0 ? (
+                  filteredCoupons.map((coupon) => (
                     <TableRow key={coupon.id}>
                       <TableCell>{coupon.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</TableCell>
                       <TableCell className="font-medium">{coupon.premio}</TableCell>
                       <TableCell>
-                        <Badge variant={coupon.status === 'disponivel' ? 'secondary' : 'default'}>
+                        <Badge variant={coupon.status === 'disponivel' ? 'secondary' : 'default'} className={coupon.status === 'raspado' ? 'bg-destructive' : ''}>
                           {coupon.status === 'disponivel' ? (
                              <Tag className="mr-1 h-3 w-3" />
                           ) : (
                              <CheckCircle className="mr-1 h-3 w-3" />
                           )}
-                          {coupon.status}
+                          {coupon.status === 'disponivel' ? 'Disponível' : 'Raspado'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -266,7 +297,7 @@ export function ScratchCouponManager() {
                   !isLoading && (
                     <TableRow>
                       <TableCell colSpan={6} className="h-24 text-center">
-                        Nenhuma raspadinha liberada ainda.
+                        Nenhuma raspadinha encontrada para este filtro.
                       </TableCell>
                     </TableRow>
                   )
