@@ -105,11 +105,8 @@ function RaspadinhasPage() {
     }
   };
   
-  // A raspadinha recém-raspada permanece visível na aba 'Disponíveis'
-  const availableOrRecentlyScratched = useMemo(() => scratchCoupons.filter(c => c.status === 'disponivel' || (c.status === 'raspado' && c.raspadoEm && (Date.now() / 1000 - c.raspadoEm.seconds < 60 * 5 ))), [scratchCoupons]);
-  
-  // A aba 'Utilizados' mostra apenas os que já foram raspados há algum tempo.
-  const usedCoupons = useMemo(() => scratchCoupons.filter(c => c.status === 'raspado' && c.raspadoEm && (Date.now() / 1000 - c.raspadoEm.seconds >= 60 * 5)), [scratchCoupons]);
+  const availableCoupons = useMemo(() => scratchCoupons.filter(c => c.status === 'disponivel'), [scratchCoupons]);
+  const usedCoupons = useMemo(() => scratchCoupons.filter(c => c.status === 'raspado'), [scratchCoupons]);
   
   const hasAnyResults = scratchCoupons.length > 0;
 
@@ -158,7 +155,7 @@ function RaspadinhasPage() {
           ) : (
             <div className="animate-in fade-in-50 duration-500">
                 <div className="flex items-center mb-4">
-                    <Button variant="ghost" size="icon" onClick={() => setSearched(false)}>
+                    <Button variant="ghost" size="icon" onClick={() => { setSearched(false); setCpf(''); setScratchCoupons([]); }}>
                         <ChevronLeft/>
                     </Button>
                     <h1 className="text-xl font-bold ml-2">Cupons Raspáveis</h1>
@@ -166,18 +163,14 @@ function RaspadinhasPage() {
                 {hasAnyResults ? (
                     <Tabs defaultValue="disponiveis" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="disponiveis">Disponíveis ({availableOrRecentlyScratched.length})</TabsTrigger>
+                            <TabsTrigger value="disponiveis">Disponíveis ({availableCoupons.length})</TabsTrigger>
                             <TabsTrigger value="utilizados">Utilizados ({usedCoupons.length})</TabsTrigger>
                         </TabsList>
                         <TabsContent value="disponiveis" className="mt-6">
-                            {availableOrRecentlyScratched.length > 0 ? (
+                            {availableCoupons.length > 0 ? (
                                 <div className="space-y-6">
-                                    {availableOrRecentlyScratched.map(coupon => 
-                                        coupon.status === 'disponivel' ? (
-                                            <ScratchCard key={coupon.id} coupon={coupon} onScratch={handleScratchCoupon} />
-                                        ) : (
-                                            <ScratchCardDetails key={coupon.id} coupon={coupon} />
-                                        )
+                                    {availableCoupons.map(coupon => 
+                                        <ScratchCard key={coupon.id} coupon={coupon} onScratch={handleScratchCoupon} />
                                     )}
                                 </div>
                             ) : (
@@ -215,7 +208,7 @@ function RaspadinhasPage() {
                          <Image src="https://picsum.photos/seed/no-scratch-card/200/200" alt="Ilustração de cupom" width={150} height={150} className="mx-auto mb-4 opacity-50" data-ai-hint="empty state illustration" />
                         <h3 className="text-xl font-bold">Nenhum Cupom Raspável disponível!</h3>
                         <p className="text-muted-foreground mt-2 max-w-sm mx-auto">No momento não existem Cupons Raspáveis disponíveis para você tentar a sorte!</p>
-                        <Button onClick={() => setSearched(false)} className="mt-6">
+                        <Button onClick={() => { setSearched(false); setCpf(''); }} className="mt-6">
                            Voltar
                         </Button>
                     </div>
@@ -236,5 +229,3 @@ export default function RaspadinhasPageWrapper() {
         </FirebaseClientProvider>
     )
 }
-
-    
