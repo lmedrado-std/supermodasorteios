@@ -8,7 +8,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import AdminMenu from './components/AdminMenu';
 import { Logo } from '@/components/Logo';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldAlert, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from '@/components/ui/button';
 
 type AuthStatus = 'loading' | 'admin' | 'guest' | 'unauthorized';
 
@@ -121,12 +128,22 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   <Link href="/" className="hover:text-primary hover:underline px-1 sm:px-2">
                     Início
                   </Link>
-                  <Link href="/meus-cupons" className="hover:text-primary hover:underline px-1 sm:px-2">
-                    Meus Cupons
-                  </Link>
-                  <Link href="/raspadinhas" className="hover:text-primary hover:underline px-1 sm:px-2">
-                    Raspadinhas
-                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                       <Button variant="ghost" className="hover:text-primary hover:bg-transparent text-sm text-muted-foreground font-normal px-1 sm:px-2">
+                        Minhas Promoções
+                        <ChevronDown className="relative top-[1px] ml-1 h-3 w-3 transition duration-200 group-data-[state=open]:rotate-180" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem asChild>
+                        <Link href="/meus-cupons">Cupons de Sorteio</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/raspadinhas">Raspadinhas</Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                    <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2">
                     Regulamento
                   </Link>

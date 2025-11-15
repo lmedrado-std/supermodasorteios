@@ -1,13 +1,20 @@
 'use client';
 import Link from 'next/link';
 import { Logo } from './Logo';
-import { Settings, BookOpen, Sparkles } from 'lucide-react';
+import { Settings, BookOpen, Sparkles, ChevronDown } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from './ui/button';
 
 export function Header() {
   return (
@@ -21,12 +28,22 @@ export function Header() {
           <Link href="/" className="hover:text-primary hover:underline px-1 sm:px-2">
             Início
           </Link>
-          <Link href="/meus-cupons" className="hover:text-primary hover:underline px-1 sm:px-2">
-            Meus Cupons
-          </Link>
-          <Link href="/raspadinhas" className="hover:text-primary hover:underline px-1 sm:px-2">
-            Raspadinhas
-          </Link>
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+               <Button variant="ghost" className="hover:text-primary hover:bg-transparent text-sm text-muted-foreground font-normal px-1 sm:px-2">
+                Minhas Promoções
+                <ChevronDown className="relative top-[1px] ml-1 h-3 w-3 transition duration-200 group-data-[state=open]:rotate-180" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem asChild>
+                <Link href="/meus-cupons">Cupons de Sorteio</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/raspadinhas">Raspadinhas</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
            <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2 flex items-center gap-1">
             Regulamento
           </Link>
