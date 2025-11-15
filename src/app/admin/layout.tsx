@@ -22,60 +22,52 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
-    // Controller to prevent state updates on unmounted component
-    const abortController = new AbortController();
-
-    if (isUserLoading) {
-      setAuthStatus('loading');
-      return;
-    }
-
-    if (!user) {
-      setAuthStatus('guest');
-      if (!isLoginPage) {
-        router.push('/admin/login');
+    const checkAdminStatus = async () => {
+      if (isUserLoading) {
+        setAuthStatus('loading');
+        return;
       }
-      return;
-    }
 
-    // User is logged in, now check for admin role
-    const checkAdmin = async () => {
-      if (!firestore) return; // Wait for firestore to be available
-      
-      try {
-        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-        const adminDoc = await getDoc(adminRoleRef);
-
-        if (abortController.signal.aborted) return;
-
-        if (adminDoc.exists() && adminDoc.data()?.role === 'admin') {
-          setAuthStatus('admin');
-          if (isLoginPage) {
-            router.push('/admin');
-          }
-        } else {
-          setAuthStatus('unauthorized');
-          // Don't log out immediately, show an unauthorized message first
+      if (!user) {
+        setAuthStatus('guest');
+        if (!isLoginPage) {
+          router.push('/admin/login');
         }
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        if (abortController.signal.aborted) return;
-        setAuthStatus('unauthorized'); // Treat errors as unauthorized
+        return;
+      }
+
+      // User is logged in, check for admin role
+      if (firestore) {
+        try {
+          const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+          const adminDoc = await getDoc(adminRoleRef);
+
+          if (adminDoc.exists()) {
+             setAuthStatus('admin');
+            if (isLoginPage) {
+              router.push('/admin');
+            }
+          } else {
+            setAuthStatus('unauthorized');
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+          setAuthStatus('unauthorized'); // Treat errors as unauthorized
+        }
+      } else {
+          // Firestore might not be ready yet, keep loading
+          setAuthStatus('loading');
       }
     };
 
-    checkAdmin();
-
-    return () => {
-      abortController.abort(); // Cleanup on unmount
-    };
-
+    checkAdminStatus();
   }, [user, isUserLoading, firestore, isLoginPage, router]);
+
 
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
-      setAuthStatus('guest'); // Manually set status after logout
+      // No need to setAuthStatus here, the useEffect will handle the user state change
       router.push('/admin/login');
     }
   };
@@ -119,7 +111,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="container mx-auto flex items-center justify-between p-4">
               <div className="flex items-center gap-4">
                 <Link href="/">
-                  <Logo className="h-10 md:h-12 w-auto" />
+                  <Logo className="h-12 md:h-14 w-auto" />
                 </Link>
                 <h1 className="text-xl md:text-2xl font-bold text-foreground font-headline hidden md:block">
                   Painel Administrativo

@@ -14,7 +14,7 @@ export function Header() {
     <header className="bg-card shadow-sm sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between p-4">
          <Link href="/">
-          <Logo className="h-10 md:h-12 w-auto" />
+          <Logo className="h-12 md:h-14 w-auto" />
         </Link>
         
         <nav className="flex items-center gap-0 md:gap-2 text-sm text-muted-foreground">
