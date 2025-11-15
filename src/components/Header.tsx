@@ -3,12 +3,6 @@ import Link from 'next/link';
 import { Logo } from './Logo';
 import { Settings, BookOpen, Sparkles, ChevronDown, Menu, Ticket, Home, FileText } from 'lucide-react';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -19,6 +13,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetTitle,
 } from "@/components/ui/sheet"
 import { Separator } from './ui/separator';
 import { useState } from 'react';
@@ -57,48 +52,36 @@ export function Header() {
           <Button variant="ghost" asChild>
             <Link href="/regulamento">Regulamento</Link>
           </Button>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" asChild>
-                  <Link href="/admin/login" aria-label="Painel Administrativo">
-                    <Settings className="h-5 w-5" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Painel Administrativo</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </nav>
 
         {/* Mobile Menu */}
         <div className="md:hidden">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="relative">
                 <Menu className="h-6 w-6" />
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse"></span>
                 <span className="sr-only">Abrir menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
-              <div className="flex flex-col gap-4 py-6">
+               <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
+              <div className="flex flex-col gap-2 py-6">
                  <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className='mb-4'>
                     <Logo className="h-14 w-auto" />
                 </Link>
                 <Separator />
-                <Button variant="ghost" className="justify-start text-base" asChild>
-                    <Link href="/" onClick={() => setIsMobileMenuOpen(false)}><Home className='mr-2'/> Início</Link>
+                <Button variant="ghost" className="justify-start text-base py-6" asChild>
+                    <Link href="/" onClick={() => setIsMobileMenuOpen(false)}><Home className='mr-3'/> Início</Link>
                 </Button>
-                 <Button variant="ghost" className="justify-start text-base" asChild>
-                    <Link href="/meus-cupons" onClick={() => setIsMobileMenuOpen(false)}><Ticket className='mr-2'/> Cupons de Sorteio</Link>
+                 <Button variant="ghost" className="justify-start text-base py-6" asChild>
+                    <Link href="/meus-cupons" onClick={() => setIsMobileMenuOpen(false)}><Ticket className='mr-3'/> Cupons de Sorteio</Link>
                 </Button>
-                 <Button variant="ghost" className="justify-start text-base" asChild>
-                    <Link href="/raspadinhas" onClick={() => setIsMobileMenuOpen(false)}><Sparkles className='mr-2'/> Raspadinhas</Link>
+                 <Button variant="ghost" className="justify-start text-base py-6" asChild>
+                    <Link href="/raspadinhas" onClick={() => setIsMobileMenuOpen(false)}><Sparkles className='mr-3'/> Raspadinhas</Link>
                 </Button>
-                <Button variant="ghost" className="justify-start text-base" asChild>
-                    <Link href="/regulamento" onClick={() => setIsMobileMenuOpen(false)}><FileText className='mr-2'/> Regulamento</Link>
+                <Button variant="ghost" className="justify-start text-base py-6" asChild>
+                    <Link href="/regulamento" onClick={() => setIsMobileMenuOpen(false)}><FileText className='mr-3'/> Regulamento</Link>
                 </Button>
               </div>
             </SheetContent>

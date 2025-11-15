@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 
 type AuthStatus = 'loading' | 'admin' | 'guest' | 'unauthorized';
@@ -164,22 +164,23 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                         </Button>
                         </SheetTrigger>
                         <SheetContent side="right">
-                        <div className="flex flex-col gap-4 py-6">
+                          <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
+                          <div className="flex flex-col gap-2 py-6">
                             <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className='mb-4'>
                                 <Logo className="h-14 w-auto" />
                             </Link>
                             <Separator />
-                             <Button variant="ghost" className="justify-start text-base" asChild>
-                                <Link href="/" onClick={() => setIsMobileMenuOpen(false)}><Home className='mr-2'/> Início</Link>
+                             <Button variant="ghost" className="justify-start text-base py-6" asChild>
+                                <Link href="/" onClick={() => setIsMobileMenuOpen(false)}><Home className='mr-3'/> Início</Link>
                             </Button>
-                            <Button variant="ghost" className="justify-start text-base" asChild>
-                                <Link href="/meus-cupons" onClick={() => setIsMobileMenuOpen(false)}><Ticket className='mr-2'/> Cupons de Sorteio</Link>
+                            <Button variant="ghost" className="justify-start text-base py-6" asChild>
+                                <Link href="/meus-cupons" onClick={() => setIsMobileMenuOpen(false)}><Ticket className='mr-3'/> Cupons de Sorteio</Link>
                             </Button>
-                            <Button variant="ghost" className="justify-start text-base" asChild>
-                                <Link href="/raspadinhas" onClick={() => setIsMobileMenuOpen(false)}><Sparkles className='mr-2'/> Raspadinhas</Link>
+                            <Button variant="ghost" className="justify-start text-base py-6" asChild>
+                                <Link href="/raspadinhas" onClick={() => setIsMobileMenuOpen(false)}><Sparkles className='mr-3'/> Raspadinhas</Link>
                             </Button>
-                            <Button variant="ghost" className="justify-start text-base" asChild>
-                                <Link href="/regulamento" onClick={() => setIsMobileMenuOpen(false)}><FileText className='mr-2'/> Regulamento</Link>
+                            <Button variant="ghost" className="justify-start text-base py-6" asChild>
+                                <Link href="/regulamento" onClick={() => setIsMobileMenuOpen(false)}><FileText className='mr-3'/> Regulamento</Link>
                             </Button>
                         </div>
                         </SheetContent>
