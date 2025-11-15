@@ -70,7 +70,7 @@ export function ScratchCouponManager() {
   const [cpf, setCpf] = useState('');
   const [fullName, setFullName] = useState('');
   const [premio, setPremio] = useState('');
-  const [purchaseValue, setPurchaseValue] = useState<number | undefined>();
+  const [purchaseValue, setPurchaseValue] = useState<number | undefined>(undefined);
   const [purchaseDate, setPurchaseDate] = useState('');
   const [purchaseLocation, setPurchaseLocation] = useState('');
   const [purchasePhone, setPurchasePhone] = useState('');
@@ -189,10 +189,17 @@ export function ScratchCouponManager() {
     setPremio(coupon.premio);
     setPurchaseValue(coupon.purchaseValue);
     if (coupon.purchaseDate) {
-      setPurchaseDate(format(coupon.purchaseDate.toDate(), 'yyyy-MM-dd'));
+      // The date needs to be in 'yyyy-MM-dd' format for the input type="date"
+      const date = coupon.purchaseDate.toDate();
+      const formattedDate = [
+        date.getFullYear(),
+        ('0' + (date.getMonth() + 1)).slice(-2),
+        ('0' + date.getDate()).slice(-2)
+      ].join('-');
+      setPurchaseDate(formattedDate);
     }
-    setPurchaseLocation(coupon.purchaseLocation);
-    setPurchasePhone(coupon.purchasePhone);
+    setPurchaseLocation(coupon.purchaseLocation || '');
+    setPurchasePhone(coupon.purchasePhone || '');
     setCouponNumber(''); // Clear coupon number to avoid accidental duplicates
     toast({
         title: 'Cupom Duplicado!',
@@ -420,5 +427,3 @@ export function ScratchCouponManager() {
     </div>
   );
 }
-
-    
