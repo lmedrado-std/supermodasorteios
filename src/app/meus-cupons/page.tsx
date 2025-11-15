@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import {
   collection,
   query,
@@ -9,6 +9,7 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
+  limit,
 } from 'firebase/firestore';
 import { useFirestore, FirebaseClientProvider } from '@/firebase';
 import { Header } from '@/components/Header';
@@ -341,14 +342,19 @@ function MeusCuponsPage() {
       });
       setScratchCoupons(sortedScratchCoupons);
 
-      if (sortedRaffleCoupons.length === 0 && foundScratchCoupons.length > 0 && foundScratchCoupons[0].cpf) {
-          // Attempt to get name from a raffle coupon if not already set
-           const anyRaffleCoupon = await getDocs(query(collection(firestore, 'coupons'), where('cpf', '==', foundScratchCoupons[0].cpf), where('fullName', '!=', null)));
-           if(!anyRaffleCoupon.empty) {
-               setFullName(anyRaffleCoupon.docs[0].data().fullName);
-           } else {
-               setFullName('Cliente');
-           }
+      if (sortedRaffleCoupons.length === 0 && foundScratchCoupons.length > 0 && !fullName) {
+        // If we don't have a name yet, try to find one from any coupon associated with the CPF
+        const nameQuery = query(
+          collection(firestore, 'coupons'),
+          where('cpf', '==', formattedCpf),
+          limit(1)
+        );
+        const nameSnapshot = await getDocs(nameQuery);
+        if (!nameSnapshot.empty) {
+          setFullName(nameSnapshot.docs[0].data().fullName);
+        } else {
+          setFullName('Cliente');
+        }
       }
 
     } catch (e) {
