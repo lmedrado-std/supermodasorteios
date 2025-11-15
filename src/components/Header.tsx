@@ -52,6 +52,9 @@ export function Header() {
           <Button variant="ghost" asChild>
             <Link href="/regulamento">Regulamento</Link>
           </Button>
+           <Button variant="ghost" asChild>
+             <Link href="/admin/login">Painel Admin</Link>
+          </Button>
         </nav>
 
         {/* Mobile Menu */}
