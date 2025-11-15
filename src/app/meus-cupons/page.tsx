@@ -24,10 +24,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search, Download, Calendar, ShoppingCart, DollarSign, Clock, Sparkles, Gift, CheckCircle } from 'lucide-react';
+import { Search, Download, Calendar, ShoppingCart, DollarSign, Clock } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import { CouponListModal } from '@/components/CouponListModal';
+import { ScratchCard } from '@/components/ScratchCard';
 
 type Coupon = {
   id: string;
@@ -52,124 +53,6 @@ type ScratchCoupon = {
 type GroupedCoupons = {
   [key: string]: Coupon[];
 };
-
-const ScratchCard = ({ coupon, onScratch }: { coupon: ScratchCoupon; onScratch: (id: string) => void }) => {
-  const [isScratched, setIsScratched] = useState(coupon.status === 'raspado');
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const isDrawing = useRef(false);
-
-  // Initialize canvas for scratching effect
-  useEffect(() => {
-    if (isScratched || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Make it responsive
-    const rect = canvas.parentElement!.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-
-    // Fill with scratchable overlay
-    ctx.fillStyle = '#d1d5db'; // gray-300
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.lineWidth = 30;
-    ctx.lineCap = 'round';
-
-    const draw = (e: MouseEvent | TouchEvent) => {
-        if (!isDrawing.current) return;
-        const touch = e.type === 'touchmove' ? (e as TouchEvent).touches[0] : null;
-        const mouseEvent = e as MouseEvent;
-        
-        const x = touch ? touch.clientX - rect.left : mouseEvent.clientX - rect.left;
-        const y = touch ? touch.clientY - rect.top : mouseEvent.clientY - rect.top;
-
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-    }
-    
-    const startDrawing = (e: MouseEvent | TouchEvent) => {
-        isDrawing.current = true;
-        draw(e);
-    }
-    
-    const stopDrawing = () => {
-        isDrawing.current = false;
-        ctx.beginPath();
-        
-        // Check if scratched enough
-        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const transparentPixels = Array.from(pixels.data).filter((_val, i) => (i + 1) % 4 === 0 && _val === 0).length;
-        if (transparentPixels / (canvas.width * canvas.height) > 0.6) {
-           handleScratch();
-        }
-    }
-
-    const handleScratch = () => {
-        if (!isScratched) {
-            setIsScratched(true);
-            onScratch(coupon.id);
-        }
-    };
-
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchstart', startDrawing, { passive: true });
-    canvas.addEventListener('touchend', stopDrawing);
-    canvas.addEventListener('touchmove', draw, { passive: true });
-
-    return () => {
-        canvas.removeEventListener('mousedown', startDrawing);
-        canvas.removeEventListener('mouseup', stopDrawing);
-        canvas.removeEventListener('mousemove', draw);
-        canvas.removeEventListener('touchstart', startDrawing);
-        canvas.removeEventListener('touchend', stopDrawing);
-        canvas.removeEventListener('touchmove', draw);
-    };
-
-  }, [isScratched, onScratch, coupon.id]);
-
-  return (
-    <Card className="shadow-lg border-amber-400/50 bg-gradient-to-br from-yellow-50 to-amber-100">
-      <CardHeader>
-        <CardTitle className="text-xl md:text-2xl font-bold text-center text-amber-600 flex items-center justify-center gap-2">
-            <Sparkles /> Raspadinha Premiada!
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="text-center space-y-4">
-        <p className="text-muted-foreground">
-          Você tem um prêmio instantâneo! Raspe abaixo para descobrir o que você ganhou.
-        </p>
-        <div className={`relative w-full h-32 rounded-lg border-2 border-dashed border-amber-400 flex items-center justify-center transition-all duration-500 ${isScratched ? 'bg-gradient-to-br from-amber-300 to-yellow-400' : 'bg-gray-100'}`}>
-          <div className="z-10 text-center">
-            <p className="text-lg font-bold text-amber-900">{coupon.premio}</p>
-            {isScratched && (
-                <div className='mt-2 text-xs text-amber-800 animate-in fade-in-50'>
-                    <p>Prêmio resgatado!</p>
-                    <p>Data: {coupon.raspadoEm ? format(coupon.raspadoEm.toDate(), 'dd/MM/yy HH:mm') : format(new Date(), 'dd/MM/yy HH:mm')}</p>
-                </div>
-            )}
-          </div>
-          {!isScratched && (
-             <canvas ref={canvasRef} className="absolute inset-0 z-20 w-full h-full cursor-pointer rounded-md"></canvas>
-          )}
-        </div>
-        {coupon.status === 'raspado' && !isScratched && (
-             <div className="flex items-center justify-center gap-2 text-green-600">
-                <CheckCircle className="h-4 w-4" />
-                <p className="font-semibold text-sm">Esta raspadinha já foi utilizada.</p>
-            </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-};
-
 
 const CouponCard = ({ purchaseCoupons }: { purchaseCoupons: Coupon[] }) => {
     const couponContainerRef = useRef<HTMLDivElement>(null);
