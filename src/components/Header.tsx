@@ -100,10 +100,6 @@ export function Header() {
                 <Button variant="ghost" className="justify-start text-base" asChild>
                     <Link href="/regulamento" onClick={() => setIsMobileMenuOpen(false)}><FileText className='mr-2'/> Regulamento</Link>
                 </Button>
-                <Separator />
-                 <Button variant="outline" className="justify-start text-base" asChild>
-                    <Link href="/admin/login" onClick={() => setIsMobileMenuOpen(false)}><Settings className='mr-2'/> Painel Admin</Link>
-                </Button>
               </div>
             </SheetContent>
           </Sheet>
