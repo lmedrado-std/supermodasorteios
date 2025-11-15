@@ -123,14 +123,20 @@
         "description": "Represents a scratchable coupon with an instant prize.",
         "properties": {
             "id": { "type": "string" },
+            "couponNumber": { "type": "string" },
             "cpf": { "type": "string" },
+            "fullName": { "type": "string" },
             "premio": { "type": "string" },
+            "purchaseValue": { "type": "number" },
+            "purchaseDate": { "type": "string", "format": "date-time" },
+            "purchaseLocation": { "type": "string" },
+            "purchasePhone": { "type": "string" },
             "liberadoEm": { "type": "string", "format": "date-time" },
             "raspadoEm": { "type": "string", "format": "date-time" },
             "status": { "type": "string", "enum": ["disponivel", "raspado", "expirado"] },
             "detalhesPremio": { "type": "object" }
         },
-        "required": ["id", "cpf", "premio", "liberadoEm", "status"]
+        "required": ["id", "cpf", "premio", "liberadoEm", "status", "fullName", "purchaseValue", "purchaseDate"]
     }
   },
   "auth": {

@@ -28,15 +28,22 @@ import { ScratchCard } from '@/components/ScratchCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from 'next/link';
 import Image from 'next/image';
+import { ScratchCardDetails } from '@/components/ScratchCardDetails';
 
 
 type ScratchCoupon = {
   id: string;
+  couponNumber: string;
   cpf: string;
+  fullName: string;
   premio: string;
-  status: 'disponivel' | 'raspado';
+  purchaseValue: number;
+  purchaseDate: Timestamp;
+  purchaseLocation: string;
+  purchasePhone: string;
   liberadoEm: Timestamp;
   raspadoEm?: Timestamp;
+  status: 'disponivel' | 'raspado' | 'expirado';
 };
 
 function RaspadinhasPage() {
@@ -46,8 +53,7 @@ function RaspadinhasPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fullName, setFullName] = useState('');
-
+  
   const handleSearch = async () => {
     if (!firestore) return;
     const formattedCpf = cpf.replace(/\D/g, '');
@@ -60,10 +66,8 @@ function RaspadinhasPage() {
     setSearched(true);
     setScratchCoupons([]);
     setError(null);
-    setFullName('');
 
     try {
-      // 1. Busca as raspadinhas
       const scratchQuery = query(collection(firestore, 'scratch_coupons'), where('cpf', '==', formattedCpf));
       const scratchSnapshot = await getDocs(scratchQuery);
       const foundScratchCoupons: ScratchCoupon[] = [];
@@ -77,26 +81,7 @@ function RaspadinhasPage() {
           return b.liberadoEm.seconds - a.liberadoEm.seconds;
       });
       setScratchCoupons(sortedScratchCoupons);
-
-      // 2. Busca o nome do usuário a partir dos cupons de sorteio (se houver raspadinhas)
-      if (foundScratchCoupons.length > 0) {
-        // Query SIMPLIFICADA: Busca apenas por CPF, sem necessitar de índice composto
-        const nameQuery = query(collection(firestore, 'coupons'), where('cpf', '==', formattedCpf));
-        const nameSnapshot = await getDocs(nameQuery);
-        
-        if (!nameSnapshot.empty) {
-            // Pega o nome do primeiro cupom encontrado que tenha um nome
-            const userDoc = nameSnapshot.docs.find(doc => doc.data().fullName);
-            if (userDoc) {
-                 setFullName(userDoc.data().fullName);
-            } else {
-                 setFullName('Cliente');
-            }
-        } else {
-            setFullName('Cliente');
-        }
-      }
-
+      
     } catch (e) {
       console.error(e);
       setError('Ocorreu um erro ao buscar suas raspadinhas. Tente novamente.');
@@ -169,8 +154,8 @@ function RaspadinhasPage() {
           ) : (
             <div className="animate-in fade-in-50 duration-500">
                 <div className="flex items-center mb-4">
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href="/"><ChevronLeft/></Link>
+                    <Button variant="ghost" size="icon" onClick={() => setSearched(false)}>
+                        <ChevronLeft/>
                     </Button>
                     <h1 className="text-xl font-bold ml-2">Cupons Raspáveis</h1>
                 </div>
@@ -202,7 +187,7 @@ function RaspadinhasPage() {
                              {usedCoupons.length > 0 ? (
                                 <div className="space-y-6">
                                     {usedCoupons.map(coupon => (
-                                        <ScratchCard key={coupon.id} coupon={coupon} onScratch={() => {}} />
+                                        <ScratchCardDetails key={coupon.id} coupon={coupon} />
                                     ))}
                                 </div>
                             ) : (

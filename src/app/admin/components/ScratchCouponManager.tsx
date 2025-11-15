@@ -9,6 +9,7 @@ import {
   orderBy,
   doc,
   deleteDoc,
+  Timestamp
 } from 'firebase/firestore';
 import {
   Card,
@@ -44,6 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { CurrencyInput } from '@/components/CurrencyInput';
 
 
 type ScratchCoupon = {
@@ -60,7 +62,14 @@ export function ScratchCouponManager() {
   const { toast } = useToast();
 
   const [cpf, setCpf] = useState('');
+  const [fullName, setFullName] = useState('');
   const [premio, setPremio] = useState('');
+  const [purchaseValue, setPurchaseValue] = useState<number | undefined>();
+  const [purchaseDate, setPurchaseDate] = useState('');
+  const [purchaseLocation, setPurchaseLocation] = useState('');
+  const [purchasePhone, setPurchasePhone] = useState('');
+  const [couponNumber, setCouponNumber] = useState('');
+
   const [isReleasing, setIsReleasing] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'disponivel' | 'raspado'>('all');
@@ -95,11 +104,11 @@ export function ScratchCouponManager() {
       return;
     }
 
-    if (!premio.trim()) {
+    if (!premio.trim() || !fullName.trim() || !purchaseValue || !purchaseDate) {
       toast({
         variant: 'destructive',
-        title: 'Prêmio Inválido',
-        description: 'A descrição do prêmio não pode estar em branco.',
+        title: 'Campos Obrigatórios',
+        description: 'Preencha todos os campos obrigatórios para liberar o cupom.',
       });
       return;
     }
@@ -108,7 +117,13 @@ export function ScratchCouponManager() {
     try {
       await addDoc(collection(firestore, 'scratch_coupons'), {
         cpf: formattedCpf,
+        fullName,
         premio,
+        purchaseValue,
+        purchaseDate: Timestamp.fromDate(new Date(purchaseDate)),
+        purchaseLocation,
+        purchasePhone,
+        couponNumber,
         status: 'disponivel',
         liberadoEm: serverTimestamp(),
         raspadoEm: null,
@@ -118,8 +133,17 @@ export function ScratchCouponManager() {
         title: 'Sucesso!',
         description: `Raspadinha liberada para o CPF ${formattedCpf}.`,
       });
+      
+      // Reset form
       setCpf('');
+      setFullName('');
       setPremio('');
+      setPurchaseValue(undefined);
+      setPurchaseDate('');
+      setPurchaseLocation('');
+      setPurchasePhone('');
+      setCouponNumber('');
+
     } catch (error) {
       console.error('Error releasing scratch coupon:', error);
       toast({
@@ -166,28 +190,83 @@ export function ScratchCouponManager() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="cpf-release">CPF do Cliente</Label>
-            <Input
-              id="cpf-release"
-              placeholder="Digite os 11 dígitos do CPF"
-              value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
-              maxLength={11}
-            />
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cpf-release">CPF do Cliente*</Label>
+                <Input
+                  id="cpf-release"
+                  placeholder="11 dígitos"
+                  value={cpf}
+                  onChange={(e) => setCpf(e.target.value)}
+                  maxLength={11}
+                />
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="fullName-release">Nome Completo*</Label>
+                  <Input
+                  id="fullName-release"
+                  placeholder="Nome do cliente"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  />
+              </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="premio-release">Prêmio</Label>
+            <Label htmlFor="premio-release">Prêmio*</Label>
             <Input
               id="premio-release"
-              placeholder="Ex: R$ 50 em compras, 10% de desconto, etc."
+              placeholder="Ex: R$ 50 em compras, 10% de desconto"
               value={premio}
               onChange={(e) => setPremio(e.target.value)}
             />
           </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="space-y-2">
+                <Label htmlFor="value-release">Valor da Compra*</Label>
+                <CurrencyInput value={purchaseValue} onValueChange={setPurchaseValue} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date-release">Data da Compra*</Label>
+                <Input
+                  id="date-release"
+                  type="date"
+                  value={purchaseDate}
+                  onChange={(e) => setPurchaseDate(e.target.value)}
+                />
+              </div>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                  <Label htmlFor="phone-release">Telefone</Label>
+                  <Input
+                  id="phone-release"
+                  placeholder="(99) 99999-9999"
+                  value={purchasePhone}
+                  onChange={(e) => setPurchasePhone(e.target.value)}
+                  />
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="coupon-number-release">Nº do Cupom Sorteio</Label>
+                <Input
+                  id="coupon-number-release"
+                  placeholder="SM-00001 (Opcional)"
+                  value={couponNumber}
+                  onChange={(e) => setCouponNumber(e.target.value)}
+                />
+              </div>
+           </div>
+            <div className="space-y-2">
+                <Label htmlFor="location-release">Local da Compra</Label>
+                <Input
+                id="location-release"
+                placeholder="Endereço da loja"
+                value={purchaseLocation}
+                onChange={(e) => setPurchaseLocation(e.target.value)}
+                />
+            </div>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleRelease} disabled={isReleasing || !cpf || !premio}>
+          <Button onClick={handleRelease} disabled={isReleasing || !cpf || !premio || !fullName || !purchaseValue || !purchaseDate}>
             {isReleasing ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
