@@ -63,6 +63,7 @@ function RaspadinhasPage() {
     setFullName('');
 
     try {
+      // 1. Busca as raspadinhas
       const scratchQuery = query(collection(firestore, 'scratch_coupons'), where('cpf', '==', formattedCpf));
       const scratchSnapshot = await getDocs(scratchQuery);
       const foundScratchCoupons: ScratchCoupon[] = [];
@@ -77,12 +78,20 @@ function RaspadinhasPage() {
       });
       setScratchCoupons(sortedScratchCoupons);
 
-      // Try to find user's name from raffle coupons
+      // 2. Busca o nome do usuário a partir dos cupons de sorteio (se houver raspadinhas)
       if (foundScratchCoupons.length > 0) {
-        const nameQuery = query(collection(firestore, 'coupons'), where('cpf', '==', formattedCpf), where('fullName', '!=', null));
+        // Query SIMPLIFICADA: Busca apenas por CPF, sem necessitar de índice composto
+        const nameQuery = query(collection(firestore, 'coupons'), where('cpf', '==', formattedCpf));
         const nameSnapshot = await getDocs(nameQuery);
+        
         if (!nameSnapshot.empty) {
-            setFullName(nameSnapshot.docs[0].data().fullName);
+            // Pega o nome do primeiro cupom encontrado que tenha um nome
+            const userDoc = nameSnapshot.docs.find(doc => doc.data().fullName);
+            if (userDoc) {
+                 setFullName(userDoc.data().fullName);
+            } else {
+                 setFullName('Cliente');
+            }
         } else {
             setFullName('Cliente');
         }
@@ -234,3 +243,5 @@ export default function RaspadinhasPageWrapper() {
         </FirebaseClientProvider>
     )
 }
+
+    
