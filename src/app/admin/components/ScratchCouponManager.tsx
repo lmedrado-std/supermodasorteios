@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Trash2, Tag, CheckCircle, Gift } from 'lucide-react';
+import { Loader2, Sparkles, Trash2, Tag, CheckCircle, Gift, Copy } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -51,7 +51,13 @@ import { CurrencyInput } from '@/components/CurrencyInput';
 type ScratchCoupon = {
   id: string;
   cpf: string;
+  fullName: string;
   premio: string;
+  purchaseValue: number;
+  purchaseDate: Timestamp;
+  purchaseLocation: string;
+  purchasePhone: string;
+  couponNumber: string;
   status: 'disponivel' | 'raspado';
   liberadoEm: { seconds: number };
   raspadoEm?: { seconds: number };
@@ -176,6 +182,25 @@ export function ScratchCouponManager() {
         setIsDeleting(null);
     }
   };
+
+  const handleDuplicate = (coupon: ScratchCoupon) => {
+    setCpf(coupon.cpf);
+    setFullName(coupon.fullName);
+    setPremio(coupon.premio);
+    setPurchaseValue(coupon.purchaseValue);
+    if (coupon.purchaseDate) {
+      setPurchaseDate(format(coupon.purchaseDate.toDate(), 'yyyy-MM-dd'));
+    }
+    setPurchaseLocation(coupon.purchaseLocation);
+    setPurchasePhone(coupon.purchasePhone);
+    setCouponNumber(''); // Clear coupon number to avoid accidental duplicates
+    toast({
+        title: 'Cupom Duplicado!',
+        description: 'Os dados foram copiados para o formulário. Ajuste e libere um novo cupom.'
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
 
   return (
     <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
@@ -350,25 +375,31 @@ export function ScratchCouponManager() {
                         {coupon.raspadoEm ? format(new Date(coupon.raspadoEm.seconds * 1000), 'dd/MM/yy HH:mm') : '-'}
                       </TableCell>
                        <TableCell className="text-right">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" disabled={isDeleting === coupon.id}>
-                                {isDeleting === coupon.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4 text-destructive"/>}
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Tem certeza que deseja excluir esta raspadinha para o CPF {coupon.cpf}? A ação não pode ser desfeita.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(coupon.id)}>Excluir</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        <div className='flex items-center justify-end gap-1'>
+                             <Button variant="ghost" size="icon" onClick={() => handleDuplicate(coupon)}>
+                                <Copy className="h-4 w-4 text-blue-500" />
+                                <span className="sr-only">Duplicar</span>
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" disabled={isDeleting === coupon.id}>
+                                    {isDeleting === coupon.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4 text-destructive"/>}
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Tem certeza que deseja excluir esta raspadinha para o CPF {coupon.cpf}? A ação não pode ser desfeita.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(coupon.id)}>Excluir</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -389,3 +420,5 @@ export function ScratchCouponManager() {
     </div>
   );
 }
+
+    
