@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { Logo } from './Logo';
-import { Settings, BookOpen, Sparkles, ChevronDown } from 'lucide-react';
+import { Settings, BookOpen, Sparkles, ChevronDown, Menu, Ticket, Home, FileText } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +15,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from './ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Separator } from './ui/separator';
 
 export function Header() {
   return (
@@ -24,13 +30,14 @@ export function Header() {
           <Logo className="h-12 md:h-14 w-auto" />
         </Link>
         
-        <nav className="flex items-center gap-0 md:gap-2 text-sm text-muted-foreground">
-          <Link href="/" className="hover:text-primary hover:underline px-1 sm:px-2">
-            Início
-          </Link>
+        {/* Desktop Menu */}
+        <nav className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+          <Button variant="ghost" asChild>
+            <Link href="/">Início</Link>
+          </Button>
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
-               <Button variant="ghost" className="hover:text-primary hover:bg-transparent text-sm text-muted-foreground font-normal px-1 sm:px-2">
+               <Button variant="ghost">
                 Minhas Promoções
                 <ChevronDown className="relative top-[1px] ml-1 h-3 w-3 transition duration-200 group-data-[state=open]:rotate-180" />
               </Button>
@@ -44,19 +51,17 @@ export function Header() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-           <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2 flex items-center gap-1">
-            Regulamento
-          </Link>
+          <Button variant="ghost" asChild>
+            <Link href="/regulamento">Regulamento</Link>
+          </Button>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link
-                  href="/admin/login"
-                  className="hover:text-primary hidden md:flex"
-                  aria-label="Painel Administrativo"
-                >
-                  <Settings className="h-5 w-5" />
-                </Link>
+                <Button variant="ghost" size="icon" asChild>
+                  <Link href="/admin/login" aria-label="Painel Administrativo">
+                    <Settings className="h-5 w-5" />
+                  </Link>
+                </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Painel Administrativo</p>
@@ -64,6 +69,43 @@ export function Header() {
             </Tooltip>
           </TooltipProvider>
         </nav>
+
+        {/* Mobile Menu */}
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Abrir menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <div className="flex flex-col gap-4 py-6">
+                 <Link href="/" className='mb-4'>
+                    <Logo className="h-14 w-auto" />
+                </Link>
+                <Separator />
+                <Button variant="ghost" className="justify-start text-base" asChild>
+                    <Link href="/"><Home className='mr-2'/> Início</Link>
+                </Button>
+                 <Button variant="ghost" className="justify-start text-base" asChild>
+                    <Link href="/meus-cupons"><Ticket className='mr-2'/> Cupons de Sorteio</Link>
+                </Button>
+                 <Button variant="ghost" className="justify-start text-base" asChild>
+                    <Link href="/raspadinhas"><Sparkles className='mr-2'/> Raspadinhas</Link>
+                </Button>
+                <Button variant="ghost" className="justify-start text-base" asChild>
+                    <Link href="/regulamento"><FileText className='mr-2'/> Regulamento</Link>
+                </Button>
+                <Separator />
+                 <Button variant="outline" className="justify-start text-base" asChild>
+                    <Link href="/admin/login"><Settings className='mr-2'/> Painel Admin</Link>
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
       </div>
     </header>
   );

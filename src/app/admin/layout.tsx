@@ -8,7 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useFirebase } from '@/firebase';
 import AdminMenu from './components/AdminMenu';
 import { Logo } from '@/components/Logo';
-import { Loader2, ShieldAlert, ChevronDown } from 'lucide-react';
+import { Loader2, ShieldAlert, ChevronDown, Menu, Ticket, Home, FileText, Sparkles } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
 
 type AuthStatus = 'loading' | 'admin' | 'guest' | 'unauthorized';
 
@@ -124,31 +126,65 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   Painel Administrativo
                 </h1>
               </div>
-              <nav className="flex items-center gap-0 md:gap-2 text-sm text-muted-foreground">
-                  <Link href="/" className="hover:text-primary hover:underline px-1 sm:px-2">
-                    Início
-                  </Link>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                       <Button variant="ghost" className="hover:text-primary hover:bg-transparent text-sm text-muted-foreground font-normal px-1 sm:px-2">
-                        Minhas Promoções
-                        <ChevronDown className="relative top-[1px] ml-1 h-3 w-3 transition duration-200 group-data-[state=open]:rotate-180" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuItem asChild>
-                        <Link href="/meus-cupons">Cupons de Sorteio</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/raspadinhas">Raspadinhas</Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                   <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2">
-                    Regulamento
-                  </Link>
-              </nav>
-              {user && auth && <AdminMenu user={user} auth={auth} onLogout={handleLogout} />}
+              <div className="flex items-center gap-2">
+                {/* Desktop Menu */}
+                <nav className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+                    <Button variant="ghost" asChild>
+                        <Link href="/">Início</Link>
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                         <Button variant="ghost">
+                          Minhas Promoções
+                          <ChevronDown className="relative top-[1px] ml-1 h-3 w-3 transition duration-200 group-data-[state=open]:rotate-180" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem asChild>
+                          <Link href="/meus-cupons">Cupons de Sorteio</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/raspadinhas">Raspadinhas</Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button variant="ghost" asChild>
+                        <Link href="/regulamento">Regulamento</Link>
+                    </Button>
+                </nav>
+                {user && auth && <AdminMenu user={user} auth={auth} onLogout={handleLogout} />}
+                 {/* Mobile Menu */}
+                <div className="md:hidden">
+                    <Sheet>
+                        <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <Menu className="h-6 w-6" />
+                            <span className="sr-only">Abrir menu</span>
+                        </Button>
+                        </SheetTrigger>
+                        <SheetContent side="right">
+                        <div className="flex flex-col gap-4 py-6">
+                            <Link href="/" className='mb-4'>
+                                <Logo className="h-14 w-auto" />
+                            </Link>
+                            <Separator />
+                             <Button variant="ghost" className="justify-start text-base" asChild>
+                                <Link href="/"><Home className='mr-2'/> Início</Link>
+                            </Button>
+                            <Button variant="ghost" className="justify-start text-base" asChild>
+                                <Link href="/meus-cupons"><Ticket className='mr-2'/> Cupons de Sorteio</Link>
+                            </Button>
+                            <Button variant="ghost" className="justify-start text-base" asChild>
+                                <Link href="/raspadinhas"><Sparkles className='mr-2'/> Raspadinhas</Link>
+                            </Button>
+                            <Button variant="ghost" className="justify-start text-base" asChild>
+                                <Link href="/regulamento"><FileText className='mr-2'/> Regulamento</Link>
+                            </Button>
+                        </div>
+                        </SheetContent>
+                    </Sheet>
+                </div>
+              </div>
             </div>
           </header>
           <main className="container mx-auto px-4 py-8">
