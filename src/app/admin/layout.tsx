@@ -124,6 +124,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   <Link href="/meus-cupons" className="hover:text-primary hover:underline px-1 sm:px-2">
                     Meus Cupons
                   </Link>
+                  <Link href="/raspadinhas" className="hover:text-primary hover:underline px-1 sm:px-2">
+                    Raspadinhas
+                  </Link>
                    <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2">
                     Regulamento
                   </Link>

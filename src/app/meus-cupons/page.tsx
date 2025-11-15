@@ -1,15 +1,11 @@
 'use client';
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   collection,
   query,
   where,
   getDocs,
   Timestamp,
-  doc,
-  updateDoc,
-  serverTimestamp,
-  limit,
 } from 'firebase/firestore';
 import { useFirestore, FirebaseClientProvider } from '@/firebase';
 import { Header } from '@/components/Header';
@@ -28,7 +24,6 @@ import { Search, Download, Calendar, ShoppingCart, DollarSign, Clock } from 'luc
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import { CouponListModal } from '@/components/CouponListModal';
-import { ScratchCard } from '@/components/ScratchCard';
 
 type Coupon = {
   id: string;
@@ -39,15 +34,6 @@ type Coupon = {
   couponNumber: string;
   registrationDate: Timestamp;
   purchaseDate: Timestamp;
-};
-
-type ScratchCoupon = {
-  id: string;
-  cpf: string;
-  premio: string;
-  status: 'disponivel' | 'raspado';
-  liberadoEm: Timestamp;
-  raspadoEm?: Timestamp;
 };
 
 type GroupedCoupons = {
@@ -163,7 +149,6 @@ function MeusCuponsPage() {
   const firestore = useFirestore();
   const [cpf, setCpf] = useState('');
   const [groupedCoupons, setGroupedCoupons] = useState<GroupedCoupons>({});
-  const [scratchCoupons, setScratchCoupons] = useState<ScratchCoupon[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -181,13 +166,11 @@ function MeusCuponsPage() {
     setIsLoading(true);
     setSearched(true);
     setGroupedCoupons({});
-    setScratchCoupons([]);
     setError(null);
     setTotalCoupons(0);
     setFullName('');
 
     try {
-      // Fetch raffle coupons
       const raffleQuery = query(collection(firestore, 'coupons'), where('cpf', '==', formattedCpf));
       const raffleSnapshot = await getDocs(raffleQuery);
       const foundRaffleCoupons: Coupon[] = [];
@@ -208,38 +191,6 @@ function MeusCuponsPage() {
       if (sortedRaffleCoupons.length > 0) {
         setFullName(sortedRaffleCoupons[0].fullName);
       }
-      
-      // Fetch scratch coupons
-      const scratchQuery = query(collection(firestore, 'scratch_coupons'), where('cpf', '==', formattedCpf));
-      const scratchSnapshot = await getDocs(scratchQuery);
-      const foundScratchCoupons: ScratchCoupon[] = [];
-      scratchSnapshot.forEach((doc) => {
-         foundScratchCoupons.push({ id: doc.id, ...doc.data() } as ScratchCoupon);
-      });
-
-      // Sort scratch coupons: available first, then by date
-      const sortedScratchCoupons = foundScratchCoupons.sort((a, b) => {
-          if (a.status === 'disponivel' && b.status !== 'disponivel') return -1;
-          if (a.status !== 'disponivel' && b.status === 'disponivel') return 1;
-          return b.liberadoEm.seconds - a.liberadoEm.seconds;
-      });
-      setScratchCoupons(sortedScratchCoupons);
-
-      if (sortedRaffleCoupons.length === 0 && foundScratchCoupons.length > 0 && !fullName) {
-        // If we don't have a name yet, try to find one from any coupon associated with the CPF
-        const nameQuery = query(
-          collection(firestore, 'coupons'),
-          where('cpf', '==', formattedCpf),
-          limit(1)
-        );
-        const nameSnapshot = await getDocs(nameQuery);
-        if (!nameSnapshot.empty) {
-          setFullName(nameSnapshot.docs[0].data().fullName);
-        } else {
-          setFullName('Cliente');
-        }
-      }
-
     } catch (e) {
       console.error(e);
       setError('Ocorreu um erro ao buscar seus cupons. Tente novamente.');
@@ -247,24 +198,8 @@ function MeusCuponsPage() {
       setIsLoading(false);
     }
   };
-
-  const handleScratchCoupon = async (id: string) => {
-    if (!firestore) return;
-    const couponRef = doc(firestore, 'scratch_coupons', id);
-    try {
-        await updateDoc(couponRef, {
-            status: 'raspado',
-            raspadoEm: serverTimestamp()
-        });
-        // Update local state to reflect the change immediately
-        setScratchCoupons(prev => prev.map(c => c.id === id ? {...c, status: 'raspado', raspadoEm: new Timestamp(Math.floor(Date.now() / 1000), 0) } as ScratchCoupon : c));
-    } catch (error) {
-        console.error("Error scratching coupon:", error);
-    }
-  };
   
   const hasRaffleResults = Object.keys(groupedCoupons).length > 0;
-  const hasScratchResults = scratchCoupons.length > 0;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -277,7 +212,7 @@ function MeusCuponsPage() {
                 Consultar Meus Cupons
               </CardTitle>
               <CardDescription className="text-center pt-2">
-                Digite seu CPF para encontrar todos os seus números da sorte e raspadinhas.
+                Digite seu CPF para encontrar todos os seus números da sorte.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -309,32 +244,22 @@ function MeusCuponsPage() {
 
               {searched && !isLoading && (
                 <div className="mt-8 animate-in fade-in-50 duration-500">
-                  {hasRaffleResults || hasScratchResults ? (
+                  {hasRaffleResults ? (
                      <div className="space-y-10">
                        <div className="text-center">
                           <h2 className="text-xl font-bold">Olá, {fullName}!</h2>
-                          {(hasRaffleResults || hasScratchResults) && (
                             <p className="text-muted-foreground">
-                                {hasRaffleResults && `Você tem um total de ${totalCoupons} cupons de sorteio.`}
-                                {hasRaffleResults && hasScratchResults && " E também "}
-                                {hasScratchResults && `${scratchCoupons.length} raspadinha(s).`}
+                                Você tem um total de {totalCoupons} cupons de sorteio.
                             </p>
-                          )}
                        </div>
-                        
-                        {/* Scratch Coupons */}
-                        {scratchCoupons.map(coupon => (
-                           <ScratchCard key={coupon.id} coupon={coupon} onScratch={handleScratchCoupon} />
-                        ))}
-
-                       {/* Raffle Coupons */}
+                       
                        {Object.keys(groupedCoupons).map(purchaseNumber => (
                           <CouponCard key={purchaseNumber} purchaseCoupons={groupedCoupons[purchaseNumber]} />
                        ))}
                     </div>
                   ) : (
                     <p className="text-center text-muted-foreground">
-                      Nenhum cupom ou raspadinha encontrado para o CPF informado.
+                      Nenhum cupom de sorteio encontrado para o CPF informado.
                     </p>
                   )}
                 </div>

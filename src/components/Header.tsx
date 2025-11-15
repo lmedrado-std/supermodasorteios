@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { Logo } from './Logo';
-import { Settings, BookOpen } from 'lucide-react';
+import { Settings, BookOpen, Sparkles } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +23,9 @@ export function Header() {
           </Link>
           <Link href="/meus-cupons" className="hover:text-primary hover:underline px-1 sm:px-2">
             Meus Cupons
+          </Link>
+          <Link href="/raspadinhas" className="hover:text-primary hover:underline px-1 sm:px-2">
+            Raspadinhas
           </Link>
            <Link href="/regulamento" className="hover:text-primary hover:underline px-1 sm:px-2 flex items-center gap-1">
             Regulamento
