@@ -98,14 +98,18 @@ function RaspadinhasPage() {
             status: 'raspado',
             raspadoEm: serverTimestamp()
         });
+        // Optimistically update the local state to change the card's appearance
         setScratchCoupons(prev => prev.map(c => c.id === id ? {...c, status: 'raspado', raspadoEm: new Timestamp(Math.floor(Date.now() / 1000), 0) } as ScratchCoupon : c));
     } catch (error) {
         console.error("Error scratching coupon:", error);
     }
   };
-
-  const availableCoupons = useMemo(() => scratchCoupons.filter(c => c.status === 'disponivel'), [scratchCoupons]);
-  const usedCoupons = useMemo(() => scratchCoupons.filter(c => c.status === 'raspado'), [scratchCoupons]);
+  
+  // A raspadinha recém-raspada permanece visível na aba 'Disponíveis'
+  const availableOrRecentlyScratched = useMemo(() => scratchCoupons.filter(c => c.status === 'disponivel' || (c.status === 'raspado' && c.raspadoEm && (Date.now() / 1000 - c.raspadoEm.seconds < 60 * 5 ))), [scratchCoupons]);
+  
+  // A aba 'Utilizados' mostra apenas os que já foram raspados há algum tempo.
+  const usedCoupons = useMemo(() => scratchCoupons.filter(c => c.status === 'raspado' && c.raspadoEm && (Date.now() / 1000 - c.raspadoEm.seconds >= 60 * 5)), [scratchCoupons]);
   
   const hasAnyResults = scratchCoupons.length > 0;
 
@@ -162,15 +166,19 @@ function RaspadinhasPage() {
                 {hasAnyResults ? (
                     <Tabs defaultValue="disponiveis" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="disponiveis">Disponíveis ({availableCoupons.length})</TabsTrigger>
+                            <TabsTrigger value="disponiveis">Disponíveis ({availableOrRecentlyScratched.length})</TabsTrigger>
                             <TabsTrigger value="utilizados">Utilizados ({usedCoupons.length})</TabsTrigger>
                         </TabsList>
                         <TabsContent value="disponiveis" className="mt-6">
-                            {availableCoupons.length > 0 ? (
+                            {availableOrRecentlyScratched.length > 0 ? (
                                 <div className="space-y-6">
-                                    {availableCoupons.map(coupon => (
-                                        <ScratchCard key={coupon.id} coupon={coupon} onScratch={handleScratchCoupon} />
-                                    ))}
+                                    {availableOrRecentlyScratched.map(coupon => 
+                                        coupon.status === 'disponivel' ? (
+                                            <ScratchCard key={coupon.id} coupon={coupon} onScratch={handleScratchCoupon} />
+                                        ) : (
+                                            <ScratchCardDetails key={coupon.id} coupon={coupon} />
+                                        )
+                                    )}
                                 </div>
                             ) : (
                                 <div className="text-center py-10 px-4">
@@ -194,7 +202,7 @@ function RaspadinhasPage() {
                                  <div className="text-center py-10 px-4">
                                     <Image src="https://picsum.photos/seed/used-coupon/200/200" alt="Ilustração de cupom usado" width={150} height={150} className="mx-auto mb-4 opacity-50" data-ai-hint="empty state illustration" />
                                     <h3 className="text-lg font-bold">Nenhum cupom utilizado.</h3>
-                                    <p className="text-muted-foreground mt-2">Você ainda não raspou nenhum cupom. Confira a aba "Disponíveis".</p>
+                                    <p className="text-muted-foreground mt-2">Seu histórico de cupons raspados aparecerá aqui.</p>
                                      <Button asChild className="mt-6">
                                         <Link href="/">Voltar</Link>
                                     </Button>
