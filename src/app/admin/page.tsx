@@ -3,8 +3,9 @@ import { AdminTable } from './components/AdminTable';
 import { SettingsManager } from './components/SettingsManager';
 import { RaffleDraw } from './components/RaffleDraw';
 import { WinnerHistory } from './components/WinnerHistory';
+import { ScratchCouponManager } from './components/ScratchCouponManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Ticket, Settings, PartyPopper, History, LogOut } from 'lucide-react';
+import { Ticket, Settings, PartyPopper, History, LogOut, Sparkles } from 'lucide-react';
 import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -34,10 +35,14 @@ export default function AdminPage() {
         </Button>
       </div>
       <Tabs defaultValue="coupons" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
           <TabsTrigger value="coupons" className="py-2 text-xs sm:text-sm">
               <Ticket className="mr-1 sm:mr-2 h-4 w-4" />
-              Cupons
+              Cupons Sorteio
+          </TabsTrigger>
+           <TabsTrigger value="scratch" className="py-2 text-xs sm:text-sm">
+              <Sparkles className="mr-1 sm:mr-2 h-4 w-4" />
+              Raspadinhas
           </TabsTrigger>
           <TabsTrigger value="raffle" className="py-2 text-xs sm:text-sm">
               <PartyPopper className="mr-1 sm:mr-2 h-4 w-4" />
@@ -57,6 +62,10 @@ export default function AdminPage() {
           <AdminTable />
         </TabsContent>
         
+        <TabsContent value="scratch">
+          <ScratchCouponManager />
+        </TabsContent>
+
         <TabsContent value="raffle">
           <div className="max-w-2xl mx-auto">
               <RaffleDraw />

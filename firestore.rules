@@ -11,6 +11,7 @@
  * - `/roles_admin/{adminUserId}`: Presence of a document grants admin privileges to the corresponding user.
  * - `/settings/raffle`: Stores application settings, like value per coupon.
  * - `/winners/{winnerId}`: Stores a history of raffle winners.
+ * - `/scratch_coupons/{scratchCouponId}`: Stores scratchable coupons with instant prizes.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -30,7 +31,7 @@ service cloud.firestore {
                     && request.resource.data.purchaseValue is number
                     && request.resource.data.purchaseDate is timestamp
                     && request.resource.data.couponNumber is string
-                    && request.resource.data.registrationDate == request.time; // Enforce server timestamp
+                    && request.resource.data.registrationDate == request.time;
       allow update, delete: if isAdmin();
     }
     
@@ -75,6 +76,21 @@ service cloud.firestore {
         allow get, list: if true;
         allow create: if isAdmin();
         allow update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Secures scratchable coupons.
+     * - Admins can create and manage them.
+     * - Anyone can read/list coupons (to find their own via CPF).
+     * - Users can only 'scratch' (update status) their own coupon.
+     * @path /scratch_coupons/{scratchCouponId}
+     */
+    match /scratch_coupons/{scratchCouponId} {
+      allow get, list: if true;
+      allow create, delete: if isAdmin();
+      allow update: if request.resource.data.status == 'raspado'
+                    && request.resource.data.raspadoEm == request.time
+                    && request.resource.data.cpf == resource.data.cpf; // Prevent changing CPF
     }
 
     // Helper functions

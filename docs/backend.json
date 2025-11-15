@@ -115,6 +115,22 @@
             "drawDate": { "type": "string", "format": "date-time" }
         },
         "required": ["id", "couponId", "couponNumber", "fullName", "cpf", "telefone", "drawDate"]
+    },
+    "ScratchCoupon": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "ScratchCoupon",
+        "type": "object",
+        "description": "Represents a scratchable coupon with an instant prize.",
+        "properties": {
+            "id": { "type": "string" },
+            "cpf": { "type": "string" },
+            "premio": { "type": "string" },
+            "liberadoEm": { "type": "string", "format": "date-time" },
+            "raspadoEm": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["disponivel", "raspado", "expirado"] },
+            "detalhesPremio": { "type": "object" }
+        },
+        "required": ["id", "cpf", "premio", "liberadoEm", "status"]
     }
   },
   "auth": {
@@ -178,6 +194,20 @@
             "params": [{
                 "name": "winnerId",
                 "description": "Unique ID for the winner record."
+            }]
+        }
+      },
+      {
+        "path": "/scratch_coupons/{scratchCouponId}",
+        "definition": {
+            "entityName": "ScratchCoupon",
+            "schema": {
+                "$ref": "#/backend/entities/ScratchCoupon"
+            },
+            "description": "Stores scratchable coupons with instant prizes.",
+            "params": [{
+                "name": "scratchCouponId",
+                "description": "Unique ID for the scratch coupon."
             }]
         }
       }
