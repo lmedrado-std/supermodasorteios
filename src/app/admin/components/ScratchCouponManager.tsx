@@ -340,8 +340,8 @@ export function ScratchCouponManager() {
                   <TableHead>CPF</TableHead>
                   <TableHead>Prêmio</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Data Liberação</TableHead>
-                  <TableHead>Data Raspado</TableHead>
+                  <TableHead>Liberação</TableHead>
+                  <TableHead>Raspado</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -372,7 +372,7 @@ export function ScratchCouponManager() {
                         {coupon.liberadoEm ? format(new Date(coupon.liberadoEm.seconds * 1000), 'dd/MM/yy HH:mm') : 'N/A'}
                       </TableCell>
                        <TableCell>
-                        {coupon.raspadoEm ? format(new Date(coupon.raspadoEm.seconds * 1000), 'dd/MM/yy HH:mm') : '-'}
+                        {coupon.raspadoEm ? format(new Date(coupon.raspadoEm.seconds * 1000), 'dd/MM/yy') : '-'}
                       </TableCell>
                        <TableCell className="text-right">
                         <div className='flex items-center justify-end gap-1'>
