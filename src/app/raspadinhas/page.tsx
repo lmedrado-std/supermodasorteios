@@ -23,7 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search, ChevronLeft, PartyPopper, Gift } from 'lucide-react';
+import { Search, ChevronLeft, PartyPopper, Gift, History, SearchX } from 'lucide-react';
 import { ScratchCard } from '@/components/ScratchCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from 'next/link';
@@ -202,7 +202,7 @@ function RaspadinhasPage() {
                                 </div>
                             ) : (
                                 <div className="text-center py-10 px-4">
-                                     <Image src="https://picsum.photos/seed/no-coupon/200/200" alt="Ilustração de cupom" width={150} height={150} className="mx-auto mb-4 opacity-50" data-ai-hint="empty state illustration" />
+                                     <Gift className="h-20 w-20 mx-auto mb-4 text-muted-foreground opacity-50" />
                                     <h3 className="text-lg font-bold">Nenhum Cupom Raspável disponível!</h3>
                                     <p className="text-muted-foreground mt-2">Você já raspou todos os seus cupons, ou não possui novos. Volte em breve!</p>
                                      <Button asChild className="mt-6">
@@ -220,7 +220,7 @@ function RaspadinhasPage() {
                                 </div>
                             ) : (
                                  <div className="text-center py-10 px-4">
-                                    <Image src="https://picsum.photos/seed/used-coupon/200/200" alt="Ilustração de cupom usado" width={150} height={150} className="mx-auto mb-4 opacity-50" data-ai-hint="empty state illustration" />
+                                    <History className="h-20 w-20 mx-auto mb-4 text-muted-foreground opacity-50" />
                                     <h3 className="text-lg font-bold">Nenhum cupom utilizado.</h3>
                                     <p className="text-muted-foreground mt-2">Seu histórico de cupons raspados aparecerá aqui.</p>
                                      <Button asChild className="mt-6">
@@ -232,11 +232,11 @@ function RaspadinhasPage() {
                     </Tabs>
                 ) : (
                      <div className="text-center py-16 px-4">
-                         <Image src="https://picsum.photos/seed/no-scratch-card/200/200" alt="Ilustração de cupom" width={150} height={150} className="mx-auto mb-4 opacity-50" data-ai-hint="empty state illustration" />
-                        <h3 className="text-xl font-bold">Nenhum Cupom Raspável disponível!</h3>
-                        <p className="text-muted-foreground mt-2 max-w-sm mx-auto">No momento não existem Cupons Raspáveis disponíveis para você tentar a sorte!</p>
+                         <SearchX className="h-20 w-20 mx-auto mb-4 text-muted-foreground opacity-50" />
+                        <h3 className="text-xl font-bold">Nenhum Cupom Raspável encontrado!</h3>
+                        <p className="text-muted-foreground mt-2 max-w-sm mx-auto">Não encontramos raspadinhas para o CPF informado. Verifique o número digitado ou cadastre uma nova compra.</p>
                         <Button onClick={() => { setSearched(false); setCpf(''); }} className="mt-6">
-                           Voltar
+                           Tentar Novamente
                         </Button>
                     </div>
                 )}
